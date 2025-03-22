@@ -2,12 +2,12 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
 
-    // Compose compiler
-    alias(libs.plugins.kotlin.compose)
+    // KSP
+    id("com.google.devtools.ksp") version "2.1.10-1.0.31"
 }
 
 android {
-    namespace = "com.canyoufix.ui"
+    namespace = "com.canyoufix.data"
     compileSdk = 35
 
     defaultConfig {
@@ -36,16 +36,10 @@ android {
 }
 
 dependencies {
-    // Compose
-    implementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-
-    implementation(libs.ui) // Для UI компонентов Compose
-    implementation(libs.material3) // Для Material 3
-    implementation(libs.androidx.foundation) // Для Column, Spacer и других
-    implementation(libs.ui.tooling.preview) // Для Preview
-    implementation(libs.androidx.navigation.compose) // Для навигации
-
+    // Room
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
 
 
     implementation(libs.androidx.core.ktx)

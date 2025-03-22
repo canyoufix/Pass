@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+
+    // Compose compiler
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -41,13 +43,15 @@ android {
 
 dependencies {
     implementation(project(":ui"))
+    implementation(project(":data"))
 
-
+    // Compose
     implementation(libs.ui) // Для UI компонентов Compose
     implementation(libs.material3) // Для Material 3
     implementation(libs.androidx.foundation) // Для Column, Spacer и других
     implementation(libs.ui.tooling.preview) // Для Preview
     implementation(libs.androidx.navigation.compose) // Для навигации
+
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
