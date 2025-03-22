@@ -38,9 +38,14 @@ android {
 dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.android)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
+    // Koin
+    implementation(project.dependencies.platform(libs.koin.bom))
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
