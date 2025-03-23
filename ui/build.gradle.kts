@@ -38,6 +38,7 @@ android {
 dependencies {
     // Compose
     implementation(platform(libs.androidx.compose.bom))
+    implementation(project(":data"))
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.ui) // Для UI компонентов Compose
@@ -45,7 +46,10 @@ dependencies {
     implementation(libs.androidx.foundation) // Для Column, Spacer и других
     implementation(libs.ui.tooling.preview) // Для Preview
     implementation(libs.androidx.navigation.compose) // Для навигации
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
 
+    // Koin
+    implementation (libs.koin.androidx.compose)
 
 
     implementation(libs.androidx.core.ktx)
