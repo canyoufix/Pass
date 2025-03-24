@@ -3,6 +3,7 @@ package com.canyoufix.ui.utils
 import java.security.SecureRandom
 
 object PasswordUtils {
+
     fun generatePassword(
         length: Int,
         useLowerCase: Boolean,

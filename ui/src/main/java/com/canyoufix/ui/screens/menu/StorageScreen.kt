@@ -32,20 +32,20 @@ fun StorageScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         StorageCategoryCard(
             title = "Логины",
-            onClick = { navController.navigate("login") }
+            onClick = { navController.navigate("password") }
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         StorageCategoryCard(
             title = "Карты",
             onClick = { navController.navigate("card") }
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         StorageCategoryCard(
             title = "Защищенные заметки",
@@ -83,7 +83,7 @@ fun StorageCategoryCard(title: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(16.dp),
+            .padding(10.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), // Corrected elevation usage
         shape = MaterialTheme.shapes.medium
     ) {

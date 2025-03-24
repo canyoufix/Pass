@@ -27,22 +27,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import com.canyoufix.data.entity.CardEntity
+import com.canyoufix.data.entity.NoteEntity
+import com.canyoufix.data.entity.PasswordEntity
+import com.canyoufix.data.viewmodel.CardViewModel
+import com.canyoufix.data.viewmodel.NoteViewModel
+import com.canyoufix.data.viewmodel.PasswordViewModel
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEntryBottomSheet(
     sheetState: SheetState,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    passwordViewModel: PasswordViewModel = koinViewModel(),
+    cardViewModel: CardViewModel = koinViewModel(),
+    noteViewModel: NoteViewModel = koinViewModel()
 ) {
     val scope = rememberCoroutineScope()
 
-    // Список категорий
     val categories = listOf("Пароль", "Карта", "Заметка")
     var selectedCategory by remember { mutableStateOf(categories[0]) }
-    var expanded by remember { mutableStateOf(false) }
 
-    // Поля ввода
+    // Общие поля
     var title by remember { mutableStateOf("") }
     var site by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -69,119 +77,52 @@ fun AddEntryBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Выпадающее меню
-            Box {
-                OutlinedButton(
-                    onClick = { expanded = true },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(text = selectedCategory)
-                }
-
-                DropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                    offset = DpOffset(0.dp, 4.dp),
-                    modifier = Modifier.width(200.dp)
-                ) {
-                    categories.forEach { category ->
-                        DropdownMenuItem(
-                            text = { Text(category) },
-                            onClick = {
-                                selectedCategory = category
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            }
+            CategoryDropdown(
+                categories = categories,
+                selectedCategory = selectedCategory,
+                onCategorySelected = { selectedCategory = it }
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Поля для заполнения в зависимости от выбранной категории
             when (selectedCategory) {
-                "Пароль" -> {
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text("Название") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = site,
-                        onValueChange = { site = it },
-                        label = { Text("Сайт") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = { Text("Логин") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Пароль") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                "Карта" -> {
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text("Название") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = cardNumber,
-                        onValueChange = { cardNumber = it },
-                        label = { Text("Номер карты") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = expiryDate,
-                        onValueChange = { expiryDate = it },
-                        label = { Text("Срок действия") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = cvc,
-                        onValueChange = { cvc = it },
-                        label = { Text("CVC") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = cardHolder,
-                        onValueChange = { cardHolder = it },
-                        label = { Text("Держатель карты") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                "Заметка" -> {
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text("Название") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = noteContent,
-                        onValueChange = { noteContent = it },
-                        label = { Text("Содержание") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                "Пароль" -> PasswordFields(
+                    title, { title = it }, site, { site = it },
+                    username, { username = it }, password, { password = it }
+                )
+                "Карта" -> CardFields(
+                    title, { title = it }, cardNumber, { cardNumber = it },
+                    expiryDate, { expiryDate = it }, cvc, { cvc = it },
+                    cardHolder, { cardHolder = it }
+                )
+                "Заметка" -> NoteFields(
+                    title, { title = it }, noteContent, { noteContent = it }
+                )
             }
+            Spacer(modifier = Modifier.height(16.dp))
 
+            Button(onClick = {
+                scope.launch {
+                    when (selectedCategory) {
+                        "Пароль" -> passwordViewModel.insert(
+                            PasswordEntity(title = title, site = site, username = username, password = password)
+                        )
+                        "Карта" -> cardViewModel.insert(
+                            CardEntity(title = title, cardNumber = cardNumber, expiryDate = expiryDate, cvc = cvc, cardHolder = cardHolder)
+                        )
+                        "Заметка" -> noteViewModel.insert(
+                            NoteEntity(title = title, content = noteContent)
+                        )
+                    }
+                    sheetState.hide()
+                }.invokeOnCompletion {
+                    if (!sheetState.isVisible) {
+                        onDismiss()
+                    }
+                }
+            }) {
+                Text("Сохранить")
+            }
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(onClick = {
@@ -195,4 +136,80 @@ fun AddEntryBottomSheet(
             }
         }
     }
+}
+
+@Composable
+fun CategoryDropdown(categories: List<String>, selectedCategory: String, onCategorySelected: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        OutlinedButton(
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = selectedCategory)
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            offset = DpOffset(0.dp, 4.dp),
+            modifier = Modifier.width(200.dp)
+        ) {
+            categories.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(category) },
+                    onClick = {
+                        onCategorySelected(category)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PasswordFields(
+    title: String, onTitleChange: (String) -> Unit,
+    site: String, onSiteChange: (String) -> Unit,
+    username: String, onUsernameChange: (String) -> Unit,
+    password: String, onPasswordChange: (String) -> Unit
+) {
+    OutlinedTextField(value = title, onValueChange = onTitleChange, label = { Text("Название") }, modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(value = site, onValueChange = onSiteChange, label = { Text("Сайт") }, modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(value = username, onValueChange = onUsernameChange, label = { Text("Логин") }, modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(value = password, onValueChange = onPasswordChange, label = { Text("Пароль") }, modifier = Modifier.fillMaxWidth())
+}
+
+@Composable
+fun CardFields(
+    title: String, onTitleChange: (String) -> Unit,
+    cardNumber: String, onCardNumberChange: (String) -> Unit,
+    expiryDate: String, onExpiryDateChange: (String) -> Unit,
+    cvc: String, onCvcChange: (String) -> Unit,
+    cardHolder: String, onCardHolderChange: (String) -> Unit
+) {
+    OutlinedTextField(value = title, onValueChange = onTitleChange, label = { Text("Название") }, modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(value = cardNumber, onValueChange = onCardNumberChange, label = { Text("Номер карты") }, modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(value = expiryDate, onValueChange = onExpiryDateChange, label = { Text("Срок действия") }, modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(value = cvc, onValueChange = onCvcChange, label = { Text("CVC") }, modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(value = cardHolder, onValueChange = onCardHolderChange, label = { Text("Держатель карты") }, modifier = Modifier.fillMaxWidth())
+}
+
+@Composable
+fun NoteFields(
+    title: String, onTitleChange: (String) -> Unit,
+    content: String, onContentChange: (String) -> Unit
+) {
+    OutlinedTextField(value = title, onValueChange = onTitleChange, label = { Text("Название") }, modifier = Modifier.fillMaxWidth())
+    Spacer(modifier = Modifier.height(8.dp))
+    OutlinedTextField(value = content, onValueChange = onContentChange, label = { Text("Содержание") }, modifier = Modifier.fillMaxWidth())
 }

@@ -28,8 +28,8 @@ fun AppTopBar(navController: NavHostController) {
         }
     }
 
-    // Проверяем, является ли текущий экран вложенным в storage (например, login, cards, notes)
-    val isNestedScreen = currentRoute in listOf("login", "card", "note")
+
+    val isNestedScreen = currentRoute in listOf("password", "card", "note")
 
     TopAppBar(
         title = {

@@ -140,7 +140,7 @@ fun GeneratorScreen() {
                 modifier = Modifier.fillMaxWidth() // Используем Column для вертикального расположения
             ) {
                 SwitchWithLabel(
-                    label = "Строчные буквы",
+                    label = "a-z",
                     checked = useLowerCase,
                     onCheckedChange = { useLowerCase = it }
                 )
@@ -148,7 +148,7 @@ fun GeneratorScreen() {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 SwitchWithLabel(
-                    label = "Заглавные буквы",
+                    label = "A-Z",
                     checked = useUpperCase,
                     onCheckedChange = { useUpperCase = it }
                 )
@@ -156,7 +156,7 @@ fun GeneratorScreen() {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 SwitchWithLabel(
-                    label = "Цифры",
+                    label = "0-9",
                     checked = useDigits,
                     onCheckedChange = { useDigits = it }
                 )
@@ -164,7 +164,7 @@ fun GeneratorScreen() {
                 Spacer(modifier = Modifier.height(16.dp))
 
                 SwitchWithLabel(
-                    label = "Спецсимволы",
+                    label = "!@#\$%^&*",
                     checked = useSymbols,
                     onCheckedChange = { useSymbols = it }
                 )

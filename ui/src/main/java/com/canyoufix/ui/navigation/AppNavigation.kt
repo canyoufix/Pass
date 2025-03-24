@@ -35,7 +35,7 @@ fun AppNavigation(navController: NavHostController, padding: PaddingValues) {
 
 
         // Storage
-        composable("login") {
+        composable("password") {
             PasswordScreen(navController = navController)
         }
         composable("card") {
