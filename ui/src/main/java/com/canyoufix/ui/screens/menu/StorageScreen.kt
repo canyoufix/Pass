@@ -19,15 +19,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.canyoufix.data.viewmodel.CardViewModel
+import com.canyoufix.data.viewmodel.NoteViewModel
+import com.canyoufix.data.viewmodel.PasswordViewModel
 import com.canyoufix.ui.components.AddEntryBottomSheet
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StorageScreen(navController: NavController) {
+fun StorageScreen(
+    navController: NavController,
+    passwordViewModel: PasswordViewModel,
+    cardViewModel: CardViewModel,
+    noteViewModel: NoteViewModel
+) {
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showBottomSheet by remember { mutableStateOf(false) }
+
 
     Column(
         modifier = Modifier
@@ -69,10 +80,14 @@ fun StorageScreen(navController: NavController) {
         }
     }
 
+    // Окно добавления записи
     if (showBottomSheet) {
         AddEntryBottomSheet(
             sheetState = sheetState,
-            onDismiss = { showBottomSheet = false }
+            onDismiss = { showBottomSheet = false },
+            passwordViewModel = passwordViewModel,  // Передаем ViewModel
+            cardViewModel = cardViewModel,          // Передаем ViewModel
+            noteViewModel = noteViewModel           // Передаем ViewModel
         )
     }
 }
@@ -105,14 +120,4 @@ fun StorageCategoryCard(title: String, onClick: () -> Unit) {
             )
         }
     }
-}
-
-@Preview
-@Composable
-fun PreviewStorageScreen() {
-    // Заглушка для NavController
-    val navController = rememberNavController()
-
-    // Теперь передаем navController в StorageScreen
-    StorageScreen(navController = navController)
 }

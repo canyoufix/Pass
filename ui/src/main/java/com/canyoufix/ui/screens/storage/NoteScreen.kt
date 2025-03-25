@@ -23,7 +23,7 @@ import com.canyoufix.ui.components.DataItemCard
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun NoteScreen(navController: NavController, viewModel: NoteViewModel = koinViewModel()) {
+fun NoteScreen(navController: NavController, viewModel: NoteViewModel) {
     val notes by viewModel.allNotes.collectAsState(initial = emptyList())
 
     Column(

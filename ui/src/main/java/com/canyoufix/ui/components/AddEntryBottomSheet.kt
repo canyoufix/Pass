@@ -34,16 +34,16 @@ import com.canyoufix.data.viewmodel.CardViewModel
 import com.canyoufix.data.viewmodel.NoteViewModel
 import com.canyoufix.data.viewmodel.PasswordViewModel
 import kotlinx.coroutines.launch
-import org.koin.androidx.compose.koinViewModel
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEntryBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    passwordViewModel: PasswordViewModel = koinViewModel(),
-    cardViewModel: CardViewModel = koinViewModel(),
-    noteViewModel: NoteViewModel = koinViewModel()
+    passwordViewModel: PasswordViewModel, // Убрали параметр по умолчанию
+    cardViewModel: CardViewModel, // Убрали параметр по умолчанию
+    noteViewModel: NoteViewModel // Убрали параметр по умолчанию
 ) {
     val scope = rememberCoroutineScope()
 
@@ -103,17 +103,22 @@ fun AddEntryBottomSheet(
 
             Button(onClick = {
                 scope.launch {
-                    when (selectedCategory) {
-                        "Пароль" -> passwordViewModel.insert(
-                            PasswordEntity(title = title, site = site, username = username, password = password)
-                        )
-                        "Карта" -> cardViewModel.insert(
-                            CardEntity(title = title, cardNumber = cardNumber, expiryDate = expiryDate, cvc = cvc, cardHolder = cardHolder)
-                        )
-                        "Заметка" -> noteViewModel.insert(
-                            NoteEntity(title = title, content = noteContent)
-                        )
+                    val entity = when (selectedCategory) {
+                        "Пароль" -> PasswordEntity(title = title, site = site, username = username, password = password)
+                        "Карта" -> CardEntity(title = title, cardNumber = cardNumber, expiryDate = expiryDate, cvc = cvc, cardHolder = cardHolder)
+                        "Заметка" -> NoteEntity(title = title, content = noteContent)
+                        else -> null
                     }
+
+                    entity?.let {
+                        when (it) {
+                            is PasswordEntity -> passwordViewModel.insert(it)
+                            is CardEntity -> cardViewModel.insert(it)
+                            is NoteEntity -> noteViewModel.insert(it)
+                            else -> Unit
+                        }
+                    }
+
                     sheetState.hide()
                 }.invokeOnCompletion {
                     if (!sheetState.isVisible) {
@@ -134,6 +139,7 @@ fun AddEntryBottomSheet(
             }) {
                 Text("Закрыть")
             }
+
         }
     }
 }
