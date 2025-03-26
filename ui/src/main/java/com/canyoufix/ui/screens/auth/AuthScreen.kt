@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import com.canyoufix.crypto.KeyGenerator
 import com.canyoufix.crypto.SecurePrefsManager
 import com.canyoufix.crypto.SecurityConfig
+import com.canyoufix.data.database.DatabaseManager
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
@@ -26,12 +27,17 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun AuthScreen(
     onSuccess: () -> Unit,
-    onFail: (String) -> Unit
+    onFail: (String) -> Unit,
+    onResetComplete: () -> Unit // Добавляем callback для сброса данных
 ) {
     val context = LocalContext.current
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val prefsManager = remember { SecurePrefsManager(context) }
+    val databaseManager = remember { DatabaseManager(context) }
+
+    // Получаем корутинный скоуп для работы с корутинами
+    val coroutineScope = rememberCoroutineScope()
 
     Box(
         modifier = Modifier
@@ -40,18 +46,17 @@ fun AuthScreen(
     ) {
         Column(
             modifier = Modifier
-                .align(Alignment.Center) // Центрируем все элементы внутри Column
+                .align(Alignment.Center)
                 .padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Иконка замка
             Icon(
-                imageVector = Icons.Default.Lock, // Используем встроенную иконку замка
-                contentDescription = "Lock Icon", // Описание иконки для доступности
-                modifier = Modifier.size(96.dp), // Размер иконки
-                tint = Color.Black // Цвет иконки (можно настроить)
+                imageVector = Icons.Default.Lock,
+                contentDescription = "Lock Icon",
+                modifier = Modifier.size(96.dp),
+                tint = Color.Black
             )
-            Spacer(modifier = Modifier.height(24.dp)) // Отступ между иконкой и полем ввода
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text("Введите мастер-пароль")
             OutlinedTextField(
@@ -62,6 +67,7 @@ fun AuthScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Кнопка для входа
             Button(onClick = {
                 val salt = prefsManager.getSalt()
                 val encryptedTestBlock = prefsManager.getEncryptedTestBlock()
@@ -80,10 +86,40 @@ fun AuthScreen(
             }) {
                 Text("Войти")
             }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Кнопка для сброса данных
+            Button(onClick = {
+                coroutineScope.launch {
+                    try {
+                        // Сброс всех данных из базы данных
+                        databaseManager.clearAllData()
+
+                        // Сброс соли и тестовых данных из EncryptedSharedPreferences
+                        prefsManager.clearAllData()
+
+                        // После сброса данных, переходим на экран регистрации (setup)
+                        onResetComplete()
+
+                        errorMessage = "Все данные были сброшены!"
+                        onFail(errorMessage!!) // Покажем сообщение
+                    } catch (e: Exception) {
+                        errorMessage = "Ошибка при сбросе данных: ${e.message}"
+                        onFail(errorMessage!!) // Покажем ошибку
+                    }
+                }
+            }) {
+                Text("Сбросить все данные")
+            }
+
             errorMessage?.let {
                 Text(it, color = Color.Red)
             }
         }
     }
 }
+
+
+
+
 

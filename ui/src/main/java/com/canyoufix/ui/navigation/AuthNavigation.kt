@@ -51,14 +51,9 @@ fun RootNavigation() {
 
         composable("auth") {
             AuthScreen(
-                onSuccess = {
-                    navController.navigate("main") {
-                        popUpTo("auth") { inclusive = true }
-                    }
-                },
-                onFail = { error ->
-                    // Можно показать ошибку или обработать иначе
-                }
+                onSuccess = { navController.navigate("main") },
+                onFail = {  },
+                onResetComplete = { navController.navigate("setup") }
             )
         }
 

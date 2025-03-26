@@ -25,4 +25,8 @@ class SecurePrefsManager(context: Context) {
     }
 
     fun getEncryptedTestBlock(): String? = prefs.getString("test_block", null)
+
+    fun clearAllData() {
+        prefs.edit().clear().apply()
+    }
 }

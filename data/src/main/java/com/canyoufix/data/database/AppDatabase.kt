@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.withTransaction
 import com.canyoufix.data.dao.CardDao
 import com.canyoufix.data.dao.NoteDao
 import com.canyoufix.data.dao.PasswordDao
@@ -35,6 +36,16 @@ abstract class AppDatabase : RoomDatabase() {
                 INSTANCE = instance
                 instance
             }
+        }
+    }
+
+    // Метод для полной очистки всех таблиц
+    suspend fun wipeAllData() {
+        // Используем транзакцию для атомарности операции
+        withTransaction {
+            passwordDao().clearAll()
+            cardDao().clearAll()
+            noteDao().clearAll()
         }
     }
 }

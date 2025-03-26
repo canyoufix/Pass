@@ -22,4 +22,7 @@ interface CardDao {
 
     @Query("SELECT * FROM cards ORDER BY title ASC")
     fun getAll(): Flow<List<CardEntity>>
+
+    @Query("DELETE FROM cards")
+    suspend fun clearAll()
 }

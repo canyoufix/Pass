@@ -22,4 +22,7 @@ interface NoteDao {
 
     @Query("SELECT * FROM notes ORDER BY title ASC")
     fun getAll(): Flow<List<NoteEntity>>
+
+    @Query("DELETE FROM notes")
+    suspend fun clearAll()
 }

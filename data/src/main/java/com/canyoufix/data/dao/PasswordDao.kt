@@ -22,4 +22,7 @@ interface PasswordDao {
 
     @Query("SELECT * FROM passwords ORDER BY title ASC")
     fun getAll(): Flow<List<PasswordEntity>>
+
+    @Query("DELETE FROM passwords")
+    suspend fun clearAll()
 }
