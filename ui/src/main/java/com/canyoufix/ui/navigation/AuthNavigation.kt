@@ -44,6 +44,7 @@ fun RootNavigation() {
         composable("setup") {
             SetupScreen {
                 navController.navigate("main") {
+                    // Очищаем весь стек до setup включительно
                     popUpTo("setup") { inclusive = true }
                 }
             }
@@ -51,9 +52,19 @@ fun RootNavigation() {
 
         composable("auth") {
             AuthScreen(
-                onSuccess = { navController.navigate("main") },
-                onFail = {  },
-                onResetComplete = { navController.navigate("setup") }
+                onSuccess = {
+                    navController.navigate("main") {
+                        // Очищаем весь стек до auth включительно
+                        popUpTo("auth") { inclusive = true }
+                    }
+                },
+                onFail = { error -> /* обработка ошибки */ },
+                onResetComplete = {
+                    navController.navigate("setup") {
+                        // Очищаем стек до auth перед переходом на setup
+                        popUpTo("auth") { inclusive = true }
+                    }
+                }
             )
         }
 

@@ -40,6 +40,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(project(":data"))
     implementation(project(":crypto"))
+    implementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.ui) // Для UI компонентов Compose
@@ -48,6 +49,7 @@ dependencies {
     implementation(libs.ui.tooling.preview) // Для Preview
     implementation(libs.androidx.navigation.compose) // Для навигации
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation (libs.androidx.material.icons.extended)
 
     // Koin
     implementation (libs.koin.androidx.compose)
