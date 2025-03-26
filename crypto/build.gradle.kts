@@ -1,13 +1,10 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-
-    // Compose compiler
-    alias(libs.plugins.kotlin.compose)
 }
 
 android {
-    namespace = "com.canyoufix.ui"
+    namespace = "com.canyoufix.crypto"
     compileSdk = 35
 
     defaultConfig {
@@ -36,26 +33,12 @@ android {
 }
 
 dependencies {
-    // Compose
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(project(":data"))
-    implementation(project(":crypto"))
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-
-    implementation(libs.ui) // Для UI компонентов Compose
-    implementation(libs.material3) // Для Material 3
-    implementation(libs.androidx.foundation) // Для Column, Spacer и других
-    implementation(libs.ui.tooling.preview) // Для Preview
-    implementation(libs.androidx.navigation.compose) // Для навигации
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-
-    // Koin
-    implementation (libs.koin.androidx.compose)
-
+    implementation(libs.androidx.security.crypto)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+    implementation(libs.androidx.security.crypto.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

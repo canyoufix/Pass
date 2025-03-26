@@ -23,3 +23,4 @@ rootProject.name = "Pass"
 include(":app")
 include(":ui")
 include(":data")
+include(":crypto")

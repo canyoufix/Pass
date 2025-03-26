@@ -11,7 +11,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import com.canyoufix.crypto.SecurePrefsManager
 import com.canyoufix.pass.ui.theme.PassTheme
+import com.canyoufix.ui.navigation.AppNavigation
+import com.canyoufix.ui.navigation.RootNavigation
 import com.canyoufix.ui.screens.MainScreen
 
 class MainActivity : ComponentActivity() {
@@ -20,7 +24,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PassTheme {
-                MainScreen()
+                RootNavigation()
             }
         }
     }

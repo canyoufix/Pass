@@ -44,6 +44,7 @@ android {
 dependencies {
     implementation(project(":ui"))
     implementation(project(":data"))
+    implementation(project(":crypto"))
 
     // Compose
     implementation(libs.ui) // Для UI компонентов Compose
