@@ -29,7 +29,8 @@ fun AppTopBar(navController: NavHostController) {
     }
 
 
-    val isNestedScreen = currentRoute in listOf("password", "card", "note")
+    val isNestedScreen = currentRoute in listOf("password", "card", "note",
+        "security_settings", "storage_settings", "appearance_settings")
 
     TopAppBar(
         title = {

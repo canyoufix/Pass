@@ -15,6 +15,9 @@ import com.canyoufix.data.viewmodel.PasswordViewModel
 import com.canyoufix.ui.screens.menu.GeneratorScreen
 import com.canyoufix.ui.screens.menu.SettingsScreen
 import com.canyoufix.ui.screens.menu.StorageScreen
+import com.canyoufix.ui.screens.settings.AppearanceSettingsScreen
+import com.canyoufix.ui.screens.settings.SecuritySettingsScreen
+import com.canyoufix.ui.screens.settings.StorageSettingsScreen
 import com.canyoufix.ui.screens.storage.CardScreen
 import com.canyoufix.ui.screens.storage.NoteScreen
 import com.canyoufix.ui.screens.storage.PasswordScreen
@@ -48,7 +51,7 @@ fun AppNavigation(navController: NavHostController, padding: PaddingValues) {
         }
 
         composable("settings") {
-            SettingsScreen()
+            SettingsScreen(navController = navController)
         }
 
         // Storage
@@ -71,6 +74,17 @@ fun AppNavigation(navController: NavHostController, padding: PaddingValues) {
                 navController = navController,
                 viewModel = noteViewModel // Передаем тот же экземпляр
             )
+        }
+
+        // Settings
+        composable("security_settings") {
+            SecuritySettingsScreen(navController = navController)
+        }
+        composable("storage_settings") {
+            StorageSettingsScreen(navController = navController)
+        }
+        composable("appearance_settings") {
+            AppearanceSettingsScreen(navController = navController)
         }
     }
 }

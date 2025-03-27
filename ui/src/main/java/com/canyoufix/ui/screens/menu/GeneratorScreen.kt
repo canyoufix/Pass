@@ -187,10 +187,3 @@ fun SwitchWithLabel(
         Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
-
-
-@Preview
-@Composable
-fun PreviewGeneratorScreen() {
-    GeneratorScreen()
-}
