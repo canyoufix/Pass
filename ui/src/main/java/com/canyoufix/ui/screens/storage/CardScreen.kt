@@ -30,9 +30,6 @@ fun CardScreen(navController: NavController, viewModel: CardViewModel = koinView
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Карты", style = MaterialTheme.typography.headlineLarge)
-        Spacer(modifier = Modifier.height(20.dp))
-
         if (cards.isEmpty()) {
             // Если список карт пуст, выводим сообщение "Пусто"
             Box(
@@ -50,7 +47,8 @@ fun CardScreen(navController: NavController, viewModel: CardViewModel = koinView
                     DataItemCard(
                         title = card.title,
                         subtitle = card.cardNumber,
-                        onClick = { navController.navigate("cardDetail/${card.id}") }
+                        onClick = { navController.navigate("cardDetail/${card.id}")
+                        }
                     )
                 }
             }

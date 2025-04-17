@@ -31,9 +31,6 @@ fun NoteScreen(navController: NavController, viewModel: NoteViewModel) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Заметки", style = MaterialTheme.typography.headlineLarge)
-        Spacer(modifier = Modifier.height(20.dp))
-
         if (notes.isEmpty()) {
             // Если список заметок пуст, выводим сообщение "Пусто"
             Box(
@@ -51,7 +48,8 @@ fun NoteScreen(navController: NavController, viewModel: NoteViewModel) {
                     DataItemCard(
                         title = note.title,
                         subtitle = note.content,
-                        onClick = { navController.navigate("noteDetail/${note.id}") }
+                        onClick = { navController.navigate("noteDetail/${note.id}")
+                        }
                     )
                 }
             }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.canyoufix.data.entity.CardEntity
 import com.canyoufix.data.repository.CardRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -26,5 +27,9 @@ class CardViewModel(private val repository: CardRepository) : ViewModel() {
 
     fun delete(card: CardEntity) = viewModelScope.launch {
         repository.delete(card)
+    }
+
+    fun getCardById(id: String): Flow<CardEntity?> {
+        return repository.getById(id)
     }
 }

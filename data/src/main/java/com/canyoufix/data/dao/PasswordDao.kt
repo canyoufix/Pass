@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PasswordDao {
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(password: PasswordEntity)
 
@@ -22,6 +23,9 @@ interface PasswordDao {
 
     @Query("SELECT * FROM passwords ORDER BY title ASC")
     fun getAll(): Flow<List<PasswordEntity>>
+
+    @Query("SELECT * FROM passwords WHERE id = :id LIMIT 1")
+    fun getById(id: String): Flow<PasswordEntity?>
 
     @Query("DELETE FROM passwords")
     suspend fun clearAll()

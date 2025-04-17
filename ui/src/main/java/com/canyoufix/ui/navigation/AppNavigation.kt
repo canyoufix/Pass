@@ -21,6 +21,9 @@ import com.canyoufix.ui.screens.settings.StorageSettingsScreen
 import com.canyoufix.ui.screens.storage.CardScreen
 import com.canyoufix.ui.screens.storage.NoteScreen
 import com.canyoufix.ui.screens.storage.PasswordScreen
+import com.canyoufix.ui.screens.storage.detail.CardDetailScreen
+import com.canyoufix.ui.screens.storage.detail.NoteDetailScreen
+import com.canyoufix.ui.screens.storage.detail.PasswordDetailScreen
 import org.koin.androidx.compose.koinViewModel
 
 
@@ -76,6 +79,35 @@ fun AppNavigation(navController: NavHostController, padding: PaddingValues) {
             )
         }
 
+        // Detail
+        composable("passwordDetail/{passwordId}") { backStackEntry ->
+            val passwordId = backStackEntry.arguments?.getString("passwordId") ?: ""
+            PasswordDetailScreen(
+                navController = navController,
+                passwordId = passwordId,
+                viewModel = passwordViewModel // Передаем тот же экземпляр
+            )
+        }
+
+        composable("cardDetail/{cardId}") { backStackEntry ->
+            val cardId = backStackEntry.arguments?.getString("cardId") ?: ""
+            CardDetailScreen(
+                navController = navController,
+                cardId = cardId,
+                viewModel = cardViewModel // Передаем тот же экземпляр
+            )
+        }
+
+        composable("noteDetail/{noteId}") { backStackEntry ->
+            val noteId = backStackEntry.arguments?.getString("noteId") ?: ""
+            NoteDetailScreen(
+                navController = navController,
+                noteId = noteId,
+                viewModel = noteViewModel // Передаем тот же экземпляр
+            )
+        }
+
+
         // Settings
         composable("security_settings") {
             SecuritySettingsScreen(navController = navController)
@@ -86,5 +118,8 @@ fun AppNavigation(navController: NavHostController, padding: PaddingValues) {
         composable("appearance_settings") {
             AppearanceSettingsScreen(navController = navController)
         }
+
+
+
     }
 }

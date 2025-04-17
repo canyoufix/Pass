@@ -17,7 +17,7 @@ import com.canyoufix.data.entity.PasswordEntity
     version = 1,
     exportSchema = false
 )
-abstract class AppDatabase : RoomDatabase() {
+    abstract class AppDatabase : RoomDatabase() {
     abstract fun cardDao(): CardDao
     abstract fun noteDao(): NoteDao
     abstract fun passwordDao(): PasswordDao
@@ -39,13 +39,4 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 
-    // Метод для полной очистки всех таблиц
-    suspend fun wipeAllData() {
-        // Используем транзакцию для атомарности операции
-        withTransaction {
-            passwordDao().clearAll()
-            cardDao().clearAll()
-            noteDao().clearAll()
-        }
-    }
 }

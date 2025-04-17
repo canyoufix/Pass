@@ -2,6 +2,7 @@ package com.canyoufix.data.repository
 
 import com.canyoufix.data.dao.NoteDao
 import com.canyoufix.data.entity.NoteEntity
+import com.canyoufix.data.entity.PasswordEntity
 import kotlinx.coroutines.flow.Flow
 
 class NoteRepository(private val noteDao: NoteDao) {
@@ -17,5 +18,9 @@ class NoteRepository(private val noteDao: NoteDao) {
 
     suspend fun delete(note: NoteEntity) {
         noteDao.delete(note)
+    }
+
+    fun getById(id: String): Flow<NoteEntity?> {
+        return noteDao.getById(id)
     }
 }

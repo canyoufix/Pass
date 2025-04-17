@@ -31,9 +31,6 @@ fun PasswordScreen(navController: NavController, viewModel: PasswordViewModel = 
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Логины", style = MaterialTheme.typography.headlineLarge)
-        Spacer(modifier = Modifier.height(20.dp))
-
         if (passwords.isEmpty()) {
             // Если список паролей пуст, выводим сообщение "Пусто"
             Box(
@@ -51,7 +48,8 @@ fun PasswordScreen(navController: NavController, viewModel: PasswordViewModel = 
                     DataItemCard(
                         title = password.title,
                         subtitle = password.username,
-                        onClick = { navController.navigate("passwordDetail/${password.id}") }
+                        onClick = { navController.navigate("passwordDetail/${password.id}")
+                        }
                     )
                 }
             }

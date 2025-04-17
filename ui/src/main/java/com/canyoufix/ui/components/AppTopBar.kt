@@ -24,12 +24,22 @@ fun AppTopBar(navController: NavHostController) {
             "storage" -> "Хранилище" to Icons.Default.Lock
             "generator" -> "Генератор" to Icons.Default.Settings
             "settings" -> "Настройки" to Icons.Default.Settings
+
+            "password" -> "Пароли" to Icons.Default.Settings
+            "card" -> "Карты" to Icons.Default.Settings
+            "note" -> "Заметки" to Icons.Default.Settings
+
+            "passwordDetail/{passwordId}" -> "Подробно" to Icons.Default.Settings
+            "cardDetail/{cardId}" -> "Подробно" to Icons.Default.Settings
+            "noteDetail/{noteId}" -> "Подробно" to Icons.Default.Settings
+
             else -> "Менеджер паролей" to Icons.Default.Lock
         }
     }
 
 
     val isNestedScreen = currentRoute in listOf("password", "card", "note",
+        "passwordDetail/{passwordId}", "cardDetail/{cardId}", "noteDetail/{noteId}",
         "security_settings", "storage_settings", "appearance_settings")
 
     TopAppBar(

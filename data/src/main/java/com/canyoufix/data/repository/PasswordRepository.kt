@@ -18,4 +18,8 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     suspend fun delete(password: PasswordEntity) {
         passwordDao.delete(password)
     }
+
+    fun getById(id: String): Flow<PasswordEntity?> {
+        return passwordDao.getById(id)
+    }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.canyoufix.data.entity.NoteEntity
 import com.canyoufix.data.repository.NoteRepository
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -26,5 +27,9 @@ class NoteViewModel(private val repository: NoteRepository) : ViewModel() {
 
     fun delete(note: NoteEntity) = viewModelScope.launch {
         repository.delete(note)
+    }
+
+    fun getNoteById(id: String): Flow<NoteEntity?> {
+        return repository.getById(id)
     }
 }
