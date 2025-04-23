@@ -122,16 +122,35 @@ fun AuthScreen(
                     onClick = {
                         val salt = prefsManager.getSalt()
                         val encryptedTestBlock = prefsManager.getEncryptedTestBlock()
+                        val fakeEncryptedTestBlock = prefsManager.getFakeEncryptedTestBlock()
 
                         if (salt != null && encryptedTestBlock != null) {
                             val key = KeyGenerator.deriveKeyFromPassword(password, salt)
-                            val decryptedBlock = KeyGenerator.decrypt(encryptedTestBlock, key)
 
-                            if (decryptedBlock == SecurityConfig.TEST_BLOCK) {
-                                onSuccess()
-                            } else {
-                                errorMessage = "Неверный пароль!"
-                                onFail(errorMessage!!)
+                            val decryptedRealBlock = try {
+                                KeyGenerator.decrypt(encryptedTestBlock, key)
+                            } catch (e: Exception) {
+                                null
+                            }
+
+                            val decryptedFakeBlock = try {
+                                fakeEncryptedTestBlock?.let { KeyGenerator.decrypt(it, key) }
+                            } catch (e: Exception) {
+                                null
+                            }
+
+                            when {
+                                decryptedRealBlock == SecurityConfig.TEST_BLOCK -> {
+                                    onSuccess()
+                                }
+                                decryptedFakeBlock == SecurityConfig.FAKE_TEST_BLOCK -> {
+                                    onSuccess()
+
+                                }
+                                else -> {
+                                    errorMessage = "Неверный пароль!"
+                                    onFail(errorMessage!!)
+                                }
                             }
                         }
                     },

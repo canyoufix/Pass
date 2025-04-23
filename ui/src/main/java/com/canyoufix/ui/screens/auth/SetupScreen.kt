@@ -42,16 +42,20 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
     val context = LocalContext.current
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var fakePassword by remember { mutableStateOf("") }
+    var confirmFakePassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
     val prefsManager = remember { SecurePrefsManager(context) }
+
     val passwordVisibility1 = rememberPasswordVisibilityState()
     val passwordVisibility2 = rememberPasswordVisibilityState()
+    val passwordVisibility3 = rememberPasswordVisibilityState()
+    val passwordVisibility4 = rememberPasswordVisibilityState()
 
-    // Управление фокусом и клавиатурой
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    // Устанавливаем фокус при запуске экрана
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
         keyboardController?.show()
@@ -103,7 +107,7 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(focusRequester) // Устанавливаем фокус
+                        .focusRequester(focusRequester)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -118,6 +122,46 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
                             Icon(
                                 imageVector = passwordVisibility2.icon,
                                 contentDescription = passwordVisibility2.description
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                OutlinedTextField(
+                    value = fakePassword,
+                    onValueChange = { fakePassword = it },
+                    label = { Text("Фейковый мастер-пароль") },
+                    visualTransformation = passwordVisibility3.visualTransformation,
+                    trailingIcon = {
+                        IconButton(onClick = passwordVisibility3.toggle) {
+                            Icon(
+                                imageVector = passwordVisibility3.icon,
+                                contentDescription = passwordVisibility3.description
+                            )
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = confirmFakePassword,
+                    onValueChange = { confirmFakePassword = it },
+                    label = { Text("Подтверждение фейкового пароля") },
+                    visualTransformation = passwordVisibility4.visualTransformation,
+                    trailingIcon = {
+                        IconButton(onClick = passwordVisibility4.toggle) {
+                            Icon(
+                                imageVector = passwordVisibility4.icon,
+                                contentDescription = passwordVisibility4.description
                             )
                         }
                     },
@@ -146,6 +190,14 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
                             password != confirmPassword -> {
                                 errorMessage = "Пароли не совпадают!"
                             }
+
+                            fakePassword.isEmpty() || confirmFakePassword.isEmpty() -> {
+                                errorMessage = "Фейковые пароли не могут быть пустыми!"
+                            }
+
+                            fakePassword != confirmFakePassword -> {
+                                errorMessage = "Фейковые пароли не совпадают!"
+                            }
                             else -> {
                                 val salt = KeyGenerator.generateSalt()
                                 val key = KeyGenerator.deriveKeyFromPassword(password, salt)
@@ -153,6 +205,12 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
 
                                 prefsManager.saveSalt(salt)
                                 prefsManager.saveEncryptedTestBlock(testBlock)
+
+                                if (fakePassword.isNotEmpty()) {
+                                    val fakeKey = KeyGenerator.deriveKeyFromPassword(fakePassword, salt)
+                                    val fakeTestBlock = KeyGenerator.encrypt(SecurityConfig.FAKE_TEST_BLOCK, fakeKey)
+                                    prefsManager.saveFakeEncryptedTestBlock(fakeTestBlock)
+                                }
 
                                 onSetupComplete()
                             }
