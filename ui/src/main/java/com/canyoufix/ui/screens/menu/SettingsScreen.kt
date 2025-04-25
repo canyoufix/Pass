@@ -45,7 +45,13 @@ fun SettingsScreen(navController: NavController) {
             icon = painterResource(id = R.drawable.ic_security),
             onClick = { navController.navigate("security_settings") }
         )
+        Spacer(modifier = Modifier.height(16.dp))
 
+        SettingsCard(
+            title = "Синхронизация",
+            icon = painterResource(id = R.drawable.ic_sync),
+            onClick = { navController.navigate("appearance_settings") }
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
         SettingsCard(
@@ -53,7 +59,6 @@ fun SettingsScreen(navController: NavController) {
             icon = painterResource(id = R.drawable.ic_storage2),
             onClick = { navController.navigate("storage_settings") }
         )
-
         Spacer(modifier = Modifier.height(16.dp))
 
         SettingsCard(
@@ -61,6 +66,7 @@ fun SettingsScreen(navController: NavController) {
             icon = painterResource(id = R.drawable.ic_palette),
             onClick = { navController.navigate("appearance_settings") }
         )
+
     }
 }
 

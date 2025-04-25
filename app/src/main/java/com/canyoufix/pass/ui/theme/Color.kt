@@ -8,7 +8,7 @@ val Pink40 = Color(0xFF7D5260)
 
 val PrimaryBlue = Color(0xFF5D9DFF) // светло-голубой для кнопок
 val BackgroundDark = Color(0xFF121212) // фон
-val SurfaceDark = Color(0xFF1C1C1E) // слегка светлее (TopBar + BottomBar)
+val SurfaceDark = Color(0xFF1F1F21) // слегка светлее (TopBar + BottomBar)
 val White = Color(0xFFFFFFFF)
 val WhiteTransparent = Color(0x27FFFFFF)
 val TextPrimary = Color(0xFFFFFFFF) // основной текст

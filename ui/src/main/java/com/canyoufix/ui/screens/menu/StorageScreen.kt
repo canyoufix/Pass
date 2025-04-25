@@ -45,21 +45,21 @@ fun StorageScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         StorageCategoryCard(
-            title = "Логин",
+            title = "Пароли",
             icon = painterResource(id = R.drawable.ic_password),
             onClick = { navController.navigate("password") }
         )
         Spacer(modifier = Modifier.height(16.dp))
 
         StorageCategoryCard(
-            title = "Карта",
+            title = "Карты",
             icon = painterResource(id = R.drawable.ic_card),
             onClick = { navController.navigate("card") }
         )
         Spacer(modifier = Modifier.height(16.dp))
 
         StorageCategoryCard(
-            title = "Защищенная заметка",
+            title = "Защищенные заметки",
             icon = painterResource(id = R.drawable.ic_note),
             onClick = { navController.navigate("note") }
         )

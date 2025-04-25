@@ -1,5 +1,7 @@
 package com.canyoufix.ui.screens.auth
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -54,6 +57,7 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
     val passwordVisibility4 = rememberPasswordVisibilityState()
 
     val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(Unit) {
@@ -62,7 +66,13 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
+                // При нажатии на фон:
+                keyboardController?.hide() // Скрываем клавиатуру
+                focusManager.clearFocus() // Убираем фокус с текстового поля
+            },
         content = { paddingValues ->
             Column(
                 modifier = Modifier
@@ -190,13 +200,14 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
                             password != confirmPassword -> {
                                 errorMessage = "Пароли не совпадают!"
                             }
-
                             fakePassword.isEmpty() || confirmFakePassword.isEmpty() -> {
                                 errorMessage = "Фейковые пароли не могут быть пустыми!"
                             }
-
                             fakePassword != confirmFakePassword -> {
                                 errorMessage = "Фейковые пароли не совпадают!"
+                            }
+                            password == fakePassword -> {  // Новая проверка
+                                errorMessage = "Настоящий и фейковый пароли не должны совпадать!"
                             }
                             else -> {
                                 val salt = KeyGenerator.generateSalt()

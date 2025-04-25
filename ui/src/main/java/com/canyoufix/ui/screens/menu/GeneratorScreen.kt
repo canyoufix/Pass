@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -127,7 +128,7 @@ fun GeneratorScreen() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp)
         ) {
@@ -137,7 +138,14 @@ fun GeneratorScreen() {
                     value = length.toFloat(),
                     onValueChange = { length = it.toInt() }, // Блокировка ползунка при выключении всех свитчей
                     valueRange = 8f..128f, // Теперь от 8 до 128
-                    modifier = Modifier.padding(bottom = 5.dp) // Отступ снизу
+                    modifier = Modifier.padding(bottom = 5.dp), // Отступ снизу
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary, // Цвет ползунка
+                        activeTrackColor = MaterialTheme.colorScheme.primary, // Цвет активной части
+                        inactiveTrackColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f), // Цвет неактивной части
+                        activeTickColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), // Цвет активных меток
+                        inactiveTickColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f) // Цвет неактивных меток
+                    )
                 )
             }
         }
@@ -146,7 +154,7 @@ fun GeneratorScreen() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp)
         ) {
