@@ -2,10 +2,15 @@ package com.canyoufix.pass.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
 
-val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
+
+val PrimaryBlue = Color(0xFF5D9DFF) // светло-голубой для кнопок
+val BackgroundDark = Color(0xFF121212) // фон
+val SurfaceDark = Color(0xFF1C1C1E) // слегка светлее (TopBar + BottomBar)
+val White = Color(0xFFFFFFFF)
+val WhiteTransparent = Color(0x27FFFFFF)
+val TextPrimary = Color(0xFFFFFFFF) // основной текст
+val TextSecondary = Color(0xFFB0B0B0) // второстепенный текст
+val ErrorRed = Color(0xFFFF6B6B) // ошибки

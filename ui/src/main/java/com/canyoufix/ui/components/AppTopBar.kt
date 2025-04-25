@@ -18,40 +18,32 @@ fun AppTopBar(navController: NavHostController) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
-    // Определение информации для заголовка и иконки
-    val screenInfo = remember(currentRoute) {
-        when (currentRoute) {
-            "storage" -> "Хранилище" to Icons.Default.Lock
-            "generator" -> "Генератор" to Icons.Default.Settings
-            "settings" -> "Настройки" to Icons.Default.Settings
+    val title = when (currentRoute) {
+        "storage" -> "Хранилище"
+        "generator" -> "Генератор"
+        "settings" -> "Настройки"
 
-            "password" -> "Пароли" to Icons.Default.Settings
-            "card" -> "Карты" to Icons.Default.Settings
-            "note" -> "Заметки" to Icons.Default.Settings
+        "password" -> "Пароли"
+        "card" -> "Карты"
+        "note" -> "Заметки"
 
-            "passwordDetail/{passwordId}" -> "Подробно" to Icons.Default.Settings
-            "cardDetail/{cardId}" -> "Подробно" to Icons.Default.Settings
-            "noteDetail/{noteId}" -> "Подробно" to Icons.Default.Settings
+        "passwordDetail/{passwordId}" -> "Подробно"
+        "cardDetail/{cardId}" -> "Подробно"
+        "noteDetail/{noteId}" -> "Подробно"
 
-            else -> "Менеджер паролей" to Icons.Default.Lock
-        }
+        else -> "Менеджер паролей"
     }
 
-
-    val isNestedScreen = currentRoute in listOf("password", "card", "note",
+    val isNestedScreen = currentRoute in listOf(
+        "password", "card", "note",
         "passwordDetail/{passwordId}", "cardDetail/{cardId}", "noteDetail/{noteId}",
-        "security_settings", "storage_settings", "appearance_settings")
+        "security_settings", "storage_settings", "appearance_settings"
+    )
 
     TopAppBar(
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(imageVector = screenInfo.second, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(screenInfo.first)
-            }
-        },
+        title = { Text(title) },
         navigationIcon = {
-            if (isNestedScreen) { // Стрелка назад только для вложенных экранов
+            if (isNestedScreen) {
                 IconButton(onClick = { navController.navigateUp() }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Назад")
                 }

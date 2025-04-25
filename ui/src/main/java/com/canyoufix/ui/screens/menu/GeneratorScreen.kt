@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -70,7 +71,7 @@ fun GeneratorScreen() {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color.Gray.copy(alpha = 0.1f)) // Серый фон с прозрачностью
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp)
         ) {
             Text(
@@ -93,7 +94,14 @@ fun GeneratorScreen() {
                     password = PasswordUtils.generatePassword(length, useLowerCase, useUpperCase, useDigits, useSymbols)
                 },
                 enabled = isAnySwitchOn, // Кнопка неактивна, если все свитчи выключены
-                modifier = Modifier.weight(1f) // Делает кнопку растягиваемой
+                modifier = Modifier.weight(1f), // Делает кнопку растягиваемой
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface, // фон неактивной
+                    disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)// текст неактивной
+                )
+
             ) {
                 Text("Сгенерировать")
             }
@@ -102,7 +110,13 @@ fun GeneratorScreen() {
             Button(
                 onClick = copyToClipboard,
                 enabled = password.isNotEmpty(),
-                modifier = Modifier.weight(1f) // Делает кнопку растягиваемой
+                modifier = Modifier.weight(1f), // Делает кнопку растягиваемой
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface, // фон неактивной
+                    disabledContentColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f) // текст неактивной
+                )
             ) {
                 Text("Скопировать")
             }
@@ -114,7 +128,7 @@ fun GeneratorScreen() {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color.Gray.copy(alpha = 0.1f)) // Серый фон
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp)
         ) {
             Column {
@@ -133,7 +147,7 @@ fun GeneratorScreen() {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
-                .background(Color.Gray.copy(alpha = 0.1f)) // Серый фон
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp)
         ) {
             Column(

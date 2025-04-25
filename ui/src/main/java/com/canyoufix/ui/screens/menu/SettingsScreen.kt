@@ -26,8 +26,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.canyoufix.ui.R
 
 @Composable
 fun SettingsScreen(navController: NavController) {
@@ -39,23 +42,23 @@ fun SettingsScreen(navController: NavController) {
     ) {
         SettingsCard(
             title = "Безопасность",
-            icon = Icons.Default.Security,
+            icon = painterResource(id = R.drawable.ic_security),
             onClick = { navController.navigate("security_settings") }
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         SettingsCard(
             title = "Хранилище",
-            icon = Icons.Default.Storage,
+            icon = painterResource(id = R.drawable.ic_storage2),
             onClick = { navController.navigate("storage_settings") }
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         SettingsCard(
             title = "Внешний вид",
-            icon = Icons.Default.Palette,
+            icon = painterResource(id = R.drawable.ic_palette),
             onClick = { navController.navigate("appearance_settings") }
         )
     }
@@ -65,15 +68,15 @@ fun SettingsScreen(navController: NavController) {
 @Composable
 fun SettingsCard(
     title: String,
-    icon: ImageVector,
+    icon: Painter,
     onClick: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            containerColor = MaterialTheme.colorScheme.surface, // Основной цвет фона
+            contentColor = MaterialTheme.colorScheme.onSurface // Цвет контента (текста и иконок)
         )
     ) {
         Row(
@@ -84,7 +87,7 @@ fun SettingsCard(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Icon(
-                imageVector = icon,
+                painter = icon,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp)
             )
