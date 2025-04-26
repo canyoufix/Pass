@@ -4,19 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.navigation.compose.rememberNavController
-import com.canyoufix.crypto.SecurePrefsManager
 import com.canyoufix.pass.ui.theme.PassTheme
-import com.canyoufix.ui.navigation.AppNavigation
-import com.canyoufix.ui.navigation.RootNavigation
-import com.canyoufix.ui.screens.MainScreen
+import com.canyoufix.ui.navigation.AuthNavigation
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,7 +13,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             PassTheme {
-                RootNavigation()
+                AuthNavigation()
             }
         }
     }

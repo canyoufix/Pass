@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class CardViewModel(private val repository: CardRepository) : ViewModel() {
-    val allCards: StateFlow<List<CardEntity>> = repository.allCards.stateIn(
+    val allCards: StateFlow<List<CardEntity>> = repository.getAllCards.stateIn(
         viewModelScope,
         SharingStarted.Lazily,
         emptyList()

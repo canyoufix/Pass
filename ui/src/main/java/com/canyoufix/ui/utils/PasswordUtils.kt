@@ -29,4 +29,5 @@ object PasswordUtils {
             .map { characters[random.nextInt(characters.length)] }
             .joinToString("")
     }
+
 }

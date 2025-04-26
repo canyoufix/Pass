@@ -2,18 +2,22 @@ package com.canyoufix.data.repository
 
 import com.canyoufix.data.dao.NoteDao
 import com.canyoufix.data.entity.NoteEntity
-import com.canyoufix.data.entity.PasswordEntity
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SessionKeyHolder
+import com.canyoufix.data.entity.CardEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class NoteRepository(private val noteDao: NoteDao) {
     private val cryptoManager = CryptoManager
 
     // Все заметки автоматически расшифровываются при получении
-    val allNotes: Flow<List<NoteEntity>> = noteDao.getAll()
+    val getAllNotes: Flow<List<NoteEntity>> = noteDao.getAll()
         .map { notes -> decryptNotes(notes) }
+
+
+    val getAllEncryptedNotes: Flow<List<NoteEntity>> = noteDao.getAll()
 
     suspend fun insert(note: NoteEntity) {
         val encryptedNote = encryptNote(note)

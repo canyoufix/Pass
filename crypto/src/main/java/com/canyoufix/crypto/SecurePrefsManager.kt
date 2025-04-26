@@ -36,4 +36,5 @@ class SecurePrefsManager(context: Context) {
     fun clearAllData() {
         prefs.edit().clear().apply()
     }
+
 }

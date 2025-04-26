@@ -3,6 +3,7 @@ package com.canyoufix.data.repository
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SessionKeyHolder
 import com.canyoufix.data.dao.PasswordDao
+import com.canyoufix.data.entity.NoteEntity
 import com.canyoufix.data.entity.PasswordEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -10,8 +11,10 @@ import kotlinx.coroutines.flow.map
 class PasswordRepository(private val passwordDao: PasswordDao) {
     private val cryptoManager = CryptoManager
 
-    val allPasswords: Flow<List<PasswordEntity>> = passwordDao.getAll()
+    val getAllPasswords: Flow<List<PasswordEntity>> = passwordDao.getAll()
         .map { passwords -> decryptPasswords(passwords) }
+
+    val getAllEncryptedPasswords: Flow<List<PasswordEntity>> = passwordDao.getAll()
 
     suspend fun insert(password: PasswordEntity) {
         val encryptedPassword = encryptPassword(password)

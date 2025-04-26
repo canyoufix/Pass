@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.map
 class CardRepository(private val cardDao: CardDao) {
     private val cryptoManager = CryptoManager
 
-    val allCards: Flow<List<CardEntity>> = cardDao.getAll()
+    val getAllCards: Flow<List<CardEntity>> = cardDao.getAll()
         .map { cards -> decryptCards(cards) }
+
+    val getAllEncryptedCards: Flow<List<CardEntity>> = cardDao.getAll()
 
     suspend fun insert(card: CardEntity) {
         val encryptedCard = encryptCard(card)

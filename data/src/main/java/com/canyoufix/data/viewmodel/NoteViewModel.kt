@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class NoteViewModel(private val repository: NoteRepository) : ViewModel() {
-    val allNotes: StateFlow<List<NoteEntity>> = repository.allNotes.stateIn(
+    val allNotes: StateFlow<List<NoteEntity>> = repository.getAllNotes.stateIn(
         viewModelScope,
         SharingStarted.Lazily,
         emptyList()

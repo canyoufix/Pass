@@ -1,5 +1,6 @@
 package com.canyoufix.crypto
 
+import android.content.Context
 import android.util.Base64
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.PBEKeySpec
@@ -57,4 +58,6 @@ object CryptoManager {
             null
         }
     }
+
+
 }

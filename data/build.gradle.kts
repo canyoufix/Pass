@@ -4,6 +4,9 @@ plugins {
 
     // KSP
     id("com.google.devtools.ksp") version "2.1.10-1.0.31"
+
+    // JSON
+    kotlin("plugin.serialization") version "2.1.20"
 }
 
 android {
@@ -47,6 +50,9 @@ dependencies {
     implementation(project.dependencies.platform(libs.koin.bom))
     implementation(libs.koin.core)
     implementation(libs.koin.android)
+
+    // JSON
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

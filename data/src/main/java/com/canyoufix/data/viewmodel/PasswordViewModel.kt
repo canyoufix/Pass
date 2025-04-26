@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class PasswordViewModel(private val repository: PasswordRepository) : ViewModel() {
-    val allPasswords: StateFlow<List<PasswordEntity>> = repository.allPasswords.stateIn(
+    val allPasswords: StateFlow<List<PasswordEntity>> = repository.getAllPasswords.stateIn(
         viewModelScope,
         SharingStarted.Lazily,
         emptyList()
