@@ -31,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.canyoufix.ui.R
+import com.canyoufix.ui.components.card.MenuCard
 
 @Composable
 fun SettingsScreen(navController: NavController) {
@@ -40,73 +41,32 @@ fun SettingsScreen(navController: NavController) {
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        SettingsCard(
+        MenuCard(
             title = "Безопасность",
             icon = painterResource(id = R.drawable.ic_security),
             onClick = { navController.navigate("security_settings") }
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        SettingsCard(
+        MenuCard(
             title = "Синхронизация",
             icon = painterResource(id = R.drawable.ic_sync),
             onClick = { navController.navigate("appearance_settings") }
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        SettingsCard(
+        MenuCard(
             title = "Хранилище",
             icon = painterResource(id = R.drawable.ic_storage2),
             onClick = { navController.navigate("storage_settings") }
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        SettingsCard(
+        MenuCard(
             title = "Внешний вид",
             icon = painterResource(id = R.drawable.ic_palette),
             onClick = { navController.navigate("appearance_settings") }
         )
 
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SettingsCard(
-    title: String,
-    icon: Painter,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface, // Основной цвет фона
-            contentColor = MaterialTheme.colorScheme.onSurface // Цвет контента (текста и иконок)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Icon(
-                painter = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Перейти",
-                modifier = Modifier.size(24.dp)
-            )
-        }
     }
 }

@@ -31,18 +31,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.canyoufix.crypto.CryptoManager
+import com.canyoufix.crypto.AuthResult
 import com.canyoufix.crypto.SecurePrefsManager
-import com.canyoufix.crypto.SecurityConfig
-import com.canyoufix.crypto.SessionKeyHolder
+import com.canyoufix.crypto.authenticateMasterPassword
 import com.canyoufix.data.database.DatabaseManager
-import com.canyoufix.ui.utils.rememberPasswordVisibilityState
+import com.canyoufix.ui.components.password.PasswordTextField
 import kotlinx.coroutines.launch
 
 @Composable
@@ -57,7 +54,6 @@ fun AuthScreen(
     val prefsManager = remember { SecurePrefsManager(context) }
     val databaseManager = remember { DatabaseManager(context) }
     val coroutineScope = rememberCoroutineScope()
-    val passwordVisibility = rememberPasswordVisibilityState()
 
     // Управление фокусом
     val focusRequester = remember { FocusRequester() }
@@ -105,68 +101,31 @@ fun AuthScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Мастер-пароль") },
-                    visualTransformation = passwordVisibility.visualTransformation,
-                    trailingIcon = {
-                        IconButton(onClick = passwordVisibility.toggle) {
-                            Icon(
-                                imageVector = passwordVisibility.icon,
-                                contentDescription = passwordVisibility.description
-                            )
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions.Default.copy(
-                        imeAction = ImeAction.Done
-                    ),
-                    singleLine = true,
+
+                PasswordTextField(
+                    password = password,
+                    onPasswordChange = { password = it },
+                    label = "Мастер-пароль",
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester)
+                        .fillMaxWidth(),
+                    focusRequester = focusRequester
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
-                        val salt = prefsManager.getSalt()
-                        val encryptedTestBlock = prefsManager.getEncryptedTestBlock()
-                        val fakeEncryptedTestBlock = prefsManager.getFakeEncryptedTestBlock()
-
-                        if (salt != null && encryptedTestBlock != null) {
-                            val key = CryptoManager.deriveKeyFromPassword(password, salt)
-
-                            val decryptedRealBlock = try {
-                                CryptoManager.decrypt(encryptedTestBlock, key)
-                            } catch (e: Exception) {
-                                null
-                            }
-
-                            val decryptedFakeBlock = try {
-                                fakeEncryptedTestBlock?.let { CryptoManager.decrypt(it, key) }
-                            } catch (e: Exception) {
-                                null
-                            }
-
-                            when {
-                                decryptedRealBlock == SecurityConfig.TEST_BLOCK -> {
-                                    SessionKeyHolder.key = key
-                                    onSuccess()
-                                }
-                                decryptedFakeBlock == SecurityConfig.FAKE_TEST_BLOCK -> {
-                                    onSuccess()
-
-                                }
-                                else -> {
-                                    errorMessage = "Неверный пароль!"
+                        coroutineScope.launch {
+                            when (val result = authenticateMasterPassword(password, prefsManager)) {
+                                is AuthResult.Success -> onSuccess()
+                                is AuthResult.FakeSuccess -> onSuccess()
+                                is AuthResult.Failure -> {
+                                    errorMessage = result.error
                                     onFail(errorMessage!!)
                                 }
                             }
                         }
                     },
-
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Войти")

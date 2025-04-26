@@ -23,6 +23,7 @@ import com.canyoufix.data.viewmodel.NoteViewModel
 import com.canyoufix.data.viewmodel.PasswordViewModel
 import com.canyoufix.ui.R
 import com.canyoufix.ui.components.AddEntryBottomSheet
+import com.canyoufix.ui.components.card.MenuCard
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -44,21 +45,21 @@ fun StorageScreen(
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        StorageCategoryCard(
+        MenuCard(
             title = "Пароли",
             icon = painterResource(id = R.drawable.ic_password),
             onClick = { navController.navigate("password") }
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        StorageCategoryCard(
+        MenuCard(
             title = "Карты",
             icon = painterResource(id = R.drawable.ic_card),
             onClick = { navController.navigate("card") }
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        StorageCategoryCard(
+        MenuCard(
             title = "Защищенные заметки",
             icon = painterResource(id = R.drawable.ic_note),
             onClick = { navController.navigate("note") }
@@ -82,57 +83,14 @@ fun StorageScreen(
         }
     }
 
-
     // Окно добавления записи
     if (showBottomSheet) {
         AddEntryBottomSheet(
             sheetState = sheetState,
             onDismiss = { showBottomSheet = false },
-            passwordViewModel = passwordViewModel,  // Передаем ViewModel
-            cardViewModel = cardViewModel,          // Передаем ViewModel
-            noteViewModel = noteViewModel           // Передаем ViewModel
+            passwordViewModel = passwordViewModel,
+            cardViewModel = cardViewModel,
+            noteViewModel = noteViewModel
         )
     }
 }
-
-@Composable
-fun StorageCategoryCard(
-    title: String,
-    icon: Painter,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface, // Основной цвет фона
-            contentColor = MaterialTheme.colorScheme.onSurface // Цвет контента (текста и иконок)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Icon(
-                painter = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Перейти",
-                modifier = Modifier.size(24.dp)
-            )
-        }
-    }
-}
-
-

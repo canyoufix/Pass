@@ -1,4 +1,4 @@
-package com.canyoufix.ui.utils
+package com.canyoufix.ui.components.password
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility

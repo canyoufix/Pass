@@ -34,7 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.canyoufix.ui.utils.ClipboardUtils
 import com.canyoufix.ui.utils.PasswordUtils
 
 @Composable
@@ -51,7 +50,7 @@ fun GeneratorScreen() {
 
     // Логика для копирования пароля
     val copyToClipboard: () -> Unit = {
-        ClipboardUtils.copyToClipboard(context, "password", password)  // Используем утилиту
+        PasswordUtils.copyToClipboard(context, "password", password)  // Используем утилиту
     }
 
     // Проверяем, что хотя бы один свитч включен

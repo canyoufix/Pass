@@ -1,9 +1,8 @@
-package com.canyoufix.ui.components
+package com.canyoufix.ui.components.bar
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -11,7 +10,7 @@ import com.canyoufix.ui.navigation.Screen
 import androidx.compose.foundation.layout.size
 
 @Composable
-fun BottomNavigationBar(navController: NavController) {
+fun AppNavigationBar(navController: NavController) {
     val items = listOf(
         Screen.Storage,
         Screen.Generator,
