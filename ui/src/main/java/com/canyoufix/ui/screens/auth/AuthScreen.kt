@@ -10,14 +10,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,15 +32,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.canyoufix.crypto.KeyGenerator
+import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SecurePrefsManager
 import com.canyoufix.crypto.SecurityConfig
+import com.canyoufix.crypto.SessionKeyHolder
 import com.canyoufix.data.database.DatabaseManager
 import com.canyoufix.ui.utils.rememberPasswordVisibilityState
 import kotlinx.coroutines.launch
@@ -140,22 +136,23 @@ fun AuthScreen(
                         val fakeEncryptedTestBlock = prefsManager.getFakeEncryptedTestBlock()
 
                         if (salt != null && encryptedTestBlock != null) {
-                            val key = KeyGenerator.deriveKeyFromPassword(password, salt)
+                            val key = CryptoManager.deriveKeyFromPassword(password, salt)
 
                             val decryptedRealBlock = try {
-                                KeyGenerator.decrypt(encryptedTestBlock, key)
+                                CryptoManager.decrypt(encryptedTestBlock, key)
                             } catch (e: Exception) {
                                 null
                             }
 
                             val decryptedFakeBlock = try {
-                                fakeEncryptedTestBlock?.let { KeyGenerator.decrypt(it, key) }
+                                fakeEncryptedTestBlock?.let { CryptoManager.decrypt(it, key) }
                             } catch (e: Exception) {
                                 null
                             }
 
                             when {
                                 decryptedRealBlock == SecurityConfig.TEST_BLOCK -> {
+                                    SessionKeyHolder.key = key
                                     onSuccess()
                                 }
                                 decryptedFakeBlock == SecurityConfig.FAKE_TEST_BLOCK -> {

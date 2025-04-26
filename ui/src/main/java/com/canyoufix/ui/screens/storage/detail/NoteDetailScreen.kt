@@ -65,7 +65,6 @@ fun NoteDetailScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text("Детали заметки", style = MaterialTheme.typography.headlineLarge)
             Spacer(modifier = Modifier.height(20.dp))
 
             OutlinedTextField(
@@ -107,7 +106,7 @@ fun NoteDetailScreen(
                     )
                     navController.popBackStack()
                 }) {
-                    Text("Сохранить")
+                    Text("Редактировать")
                 }
             }
         }

@@ -35,9 +35,10 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.canyoufix.crypto.KeyGenerator
+import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SecurePrefsManager
 import com.canyoufix.crypto.SecurityConfig
+import com.canyoufix.crypto.SessionKeyHolder
 import com.canyoufix.ui.utils.rememberPasswordVisibilityState
 
 @Composable
@@ -210,16 +211,18 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
                                 errorMessage = "Настоящий и фейковый пароли не должны совпадать!"
                             }
                             else -> {
-                                val salt = KeyGenerator.generateSalt()
-                                val key = KeyGenerator.deriveKeyFromPassword(password, salt)
-                                val testBlock = KeyGenerator.encrypt(SecurityConfig.TEST_BLOCK, key)
+                                val salt = CryptoManager.generateSalt()
+                                val key = CryptoManager.deriveKeyFromPassword(password, salt)
+                                val testBlock = CryptoManager.encrypt(SecurityConfig.TEST_BLOCK, key)
 
                                 prefsManager.saveSalt(salt)
                                 prefsManager.saveEncryptedTestBlock(testBlock)
 
+                                SessionKeyHolder.key = key
+
                                 if (fakePassword.isNotEmpty()) {
-                                    val fakeKey = KeyGenerator.deriveKeyFromPassword(fakePassword, salt)
-                                    val fakeTestBlock = KeyGenerator.encrypt(SecurityConfig.FAKE_TEST_BLOCK, fakeKey)
+                                    val fakeKey = CryptoManager.deriveKeyFromPassword(fakePassword, salt)
+                                    val fakeTestBlock = CryptoManager.encrypt(SecurityConfig.FAKE_TEST_BLOCK, fakeKey)
                                     prefsManager.saveFakeEncryptedTestBlock(fakeTestBlock)
                                 }
 

@@ -69,7 +69,6 @@ fun PasswordDetailScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text("Детали записи", style = MaterialTheme.typography.headlineLarge)
             Spacer(modifier = Modifier.height(20.dp))
 
             OutlinedTextField(

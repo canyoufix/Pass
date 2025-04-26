@@ -71,7 +71,6 @@ fun CardDetailScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            Text("Детали карты", style = MaterialTheme.typography.headlineLarge)
             Spacer(modifier = Modifier.height(20.dp))
 
             OutlinedTextField(

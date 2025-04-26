@@ -39,6 +39,7 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.android)
+    implementation(project(":crypto"))
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
