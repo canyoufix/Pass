@@ -35,9 +35,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
-import com.canyoufix.crypto.AuthResult
+import com.canyoufix.crypto.CryptoManager
+import com.canyoufix.crypto.MasterPasswordManager
 import com.canyoufix.crypto.SecurePrefsManager
-import com.canyoufix.crypto.authenticateMasterPassword
 import com.canyoufix.data.database.DatabaseManager
 import com.canyoufix.ui.components.password.PasswordTextField
 import kotlinx.coroutines.launch
@@ -59,6 +59,8 @@ fun AuthScreen(
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    val masterPasswordManager = MasterPasswordManager(prefsManager, CryptoManager)
 
     // Устанавливаем фокус при запуске экрана
     LaunchedEffect(Unit) {
@@ -116,10 +118,10 @@ fun AuthScreen(
                 Button(
                     onClick = {
                         coroutineScope.launch {
-                            when (val result = authenticateMasterPassword(password, prefsManager)) {
-                                is AuthResult.Success -> onSuccess()
-                                is AuthResult.FakeSuccess -> onSuccess()
-                                is AuthResult.Failure -> {
+                            when (val result = masterPasswordManager.authenticate(password)) {
+                                MasterPasswordManager.AuthResult.Success -> onSuccess()
+                                MasterPasswordManager.AuthResult.FakeSuccess -> onSuccess()
+                                is MasterPasswordManager.AuthResult.Failure -> {
                                     errorMessage = result.error
                                     onFail(errorMessage!!)
                                 }

@@ -17,9 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
-import java.io.File
 import java.io.IOException
-
 
 class ExportManager(
     private val noteRepository: NoteRepository,
@@ -28,16 +26,36 @@ class ExportManager(
     private val securePrefsManager: SecurePrefsManager
 ) {
     @OptIn(ExperimentalSerializationApi::class)
-    suspend fun exportAll(context: Context, uri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun exportAll(context: Context, uri: Uri, encrypted: Boolean): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val notes = noteRepository.getAllEncryptedNotes.first()
-            val cards = cardRepository.getAllEncryptedCards.first()
-            val passwords = passwordRepository.getAllEncryptedPasswords.first()
-            val salt = securePrefsManager.getSalt() ?: return@withContext Result.failure(
-                IllegalStateException("Encryption salt not found")
-            )
+            val notes = if (encrypted) {
+                noteRepository.getAllEncryptedNotes.first()
+            } else {
+                noteRepository.getAllNotes.first()
+            }
+
+            val cards = if (encrypted) {
+                cardRepository.getAllEncryptedCards.first()
+            } else {
+                cardRepository.getAllCards.first()
+            }
+
+            val passwords = if (encrypted) {
+                passwordRepository.getAllEncryptedPasswords.first()
+            } else {
+                passwordRepository.getAllPasswords.first()
+            }
+
+            val salt = if (encrypted) {
+                securePrefsManager.getSalt() ?: return@withContext Result.failure(
+                    IllegalStateException("Encryption salt not found")
+                )
+            } else {
+                ""
+            }
 
             val exportData = ExportData(
+                encrypted = encrypted,
                 salt = salt,
                 passwords = passwords,
                 cards = cards,
@@ -61,6 +79,7 @@ class ExportManager(
             Result.failure(e)
         }
     }
+
 
     private fun createMetaInfo(): MetaInfo {
         return MetaInfo(

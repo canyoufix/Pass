@@ -32,11 +32,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import com.canyoufix.crypto.CryptoManager
+import com.canyoufix.crypto.MasterPasswordManager
 import com.canyoufix.crypto.SecurePrefsManager
-import com.canyoufix.crypto.SecurityConfig
-import com.canyoufix.crypto.SessionKeyHolder
-import com.canyoufix.crypto.setupMasterPassword
-import com.canyoufix.crypto.validatePasswords
 import com.canyoufix.ui.components.password.PasswordTextField
 
 @Composable
@@ -49,6 +46,8 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val prefsManager = remember { SecurePrefsManager(context) }
+    val masterPasswordManager = MasterPasswordManager(prefsManager, CryptoManager)
+
 
     val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -145,12 +144,11 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
 
             Button(
                 onClick = {
-                    setupMasterPassword(
+                    masterPasswordManager.setup(
                         password = password,
                         confirmPassword = confirmPassword,
                         fakePassword = fakePassword,
                         confirmFakePassword = confirmFakePassword,
-                        prefsManager = prefsManager,
                         onError = { errorMessage = it },
                         onSuccess = onSetupComplete
                     )
