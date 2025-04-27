@@ -13,23 +13,25 @@ import android.os.Build
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SecurePrefsManager
 import com.canyoufix.crypto.SecurityConfig
-import com.canyoufix.crypto.SessionAESKeyHolder
+import com.canyoufix.data.database.DatabaseManager
 import com.canyoufix.data.dto.ExportData
 import com.canyoufix.data.dto.MetaInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.ExperimentalSerializationApi
 import java.io.IOException
 
 class DataExportImportManager(
+    private val context: Context,
     private val noteRepository: NoteRepository,
     private val cardRepository: CardRepository,
     private val passwordRepository: PasswordRepository,
     private val securePrefsManager: SecurePrefsManager
 ) {
-    @OptIn(ExperimentalSerializationApi::class)
-    suspend fun parseExportData(context: Context, uri: Uri): ExportData {
+    private val databaseManager = DatabaseManager(context)
+
+
+    fun parseExportData(context: Context, uri: Uri): ExportData {
         val jsonString = context.contentResolver.openInputStream(uri)?.use {
             it.readBytes().decodeToString()
         } ?: throw IOException("Не удалось прочитать файл")
@@ -137,7 +139,7 @@ class DataExportImportManager(
     }
 
 
-    suspend fun importNotEncryptedData(exportData: ExportData) {
+    suspend fun importMergeNotEncryptedData(exportData: ExportData) {
         exportData.passwords.forEach { passwordEntity ->
             passwordRepository.insert(passwordEntity)
         }
@@ -151,7 +153,12 @@ class DataExportImportManager(
         }
     }
 
-    suspend fun importEncryptedData(exportData: ExportData, importPassword: String) {
+    suspend fun importCleanNotEncryptedData(exportData: ExportData) {
+        databaseManager.clearAllData()
+        importMergeNotEncryptedData(exportData)
+    }
+
+    suspend fun importMergeEncryptedData(exportData: ExportData, importPassword: String) {
         val importSalt = exportData.salt
         if (importSalt.isEmpty()) throw IllegalStateException("Salt missing for encrypted import")
 
@@ -165,6 +172,41 @@ class DataExportImportManager(
         if (decryptedTestBlock != SecurityConfig.TEST_BLOCK) {
             throw IllegalArgumentException("Неверный мастер-пароль для импортируемых данных")
         }
+
+        // Дешифруем и сохраняем записи
+        exportData.passwords.forEach { encryptedPassword ->
+            val decryptedPassword = passwordRepository.decryptPassword(encryptedPassword, importKey)
+            passwordRepository.insert(decryptedPassword)
+        }
+
+        exportData.cards.forEach { encryptedCard ->
+            val decryptedCard = cardRepository.decryptCard(encryptedCard, importKey)
+            cardRepository.insert(decryptedCard)
+        }
+
+        exportData.notes.forEach { encryptedNote ->
+            val decryptedNote = noteRepository.decryptNote(encryptedNote, importKey)
+            noteRepository.insert(decryptedNote)
+        }
+    }
+
+    suspend fun importCleanEncryptedData(exportData: ExportData, importPassword: String) {
+        val importSalt = exportData.salt
+        if (importSalt.isEmpty()) throw IllegalStateException("Salt missing for encrypted import")
+
+        val importKey = CryptoManager.deriveKeyFromPassword(importPassword, importSalt)
+
+        // Проверка правильности мастер-пароля через расшифровку тестового блока
+        val decryptedTestBlock = exportData.encrypted?.let { encryptedTestBlock ->
+            CryptoManager.decrypt(encryptedTestBlock, importKey)
+        } ?: throw IllegalStateException("Encrypted test block missing")
+
+        if (decryptedTestBlock != SecurityConfig.TEST_BLOCK) {
+            throw IllegalArgumentException("Неверный мастер-пароль для импортируемых данных")
+        }
+
+        // Очистка БД
+        databaseManager.clearAllData()
 
         // Дешифруем и сохраняем записи
         exportData.passwords.forEach { encryptedPassword ->

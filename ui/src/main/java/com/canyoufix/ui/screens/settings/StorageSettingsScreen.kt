@@ -5,19 +5,14 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,7 +32,6 @@ import com.canyoufix.data.repository.NoteRepository
 import com.canyoufix.data.repository.PasswordRepository
 import com.canyoufix.ui.components.password.PasswordDialog
 import com.canyoufix.ui.components.password.PasswordDialogWithRadioButtons
-import com.canyoufix.ui.components.password.PasswordTextField
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -56,6 +50,7 @@ fun StorageSettingsScreen(navController: NavController) {
 
     val dataExportImportManager = remember {
         DataExportImportManager(
+            context = context,
             noteRepository = noteRepository,
             cardRepository = cardRepository,
             passwordRepository = passwordRepository,
@@ -71,6 +66,7 @@ fun StorageSettingsScreen(navController: NavController) {
     var exportReady by remember { mutableStateOf(false) }
     var exportEncrypted by remember { mutableStateOf(true) }
     var importType by remember { mutableStateOf("clean") } // "clean" или "merge"
+
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
@@ -106,7 +102,7 @@ fun StorageSettingsScreen(navController: NavController) {
             errorMessage = errorMessage,
             onConfirm = { password ->
                 if (password.isBlank()) {
-                    errorMessage = "Введите пароль"
+                    errorMessage = "Введите мастер-пароль, который использовался для экспорта"
                     return@PasswordDialog
                 }
 
@@ -114,10 +110,13 @@ fun StorageSettingsScreen(navController: NavController) {
                     try {
                         currentExportData?.let { data ->
                             if (importType == "clean") {
-                                // dataExportImportManager.clearDatabase()
+                                dataExportImportManager.importCleanEncryptedData(data, password)
+                                Toast.makeText(context, "Импорт завершён", Toast.LENGTH_SHORT).show()
+                            } else {
+                                dataExportImportManager.importMergeEncryptedData(data, password)
+                                Toast.makeText(context, "Импорт завершён", Toast.LENGTH_SHORT)
+                                    .show()
                             }
-                            dataExportImportManager.importEncryptedData(data, password)
-                            Toast.makeText(context, "Импорт завершён", Toast.LENGTH_SHORT).show()
                         }
                         showEncryptedImportDialog = false
                     } catch (e: Exception) {
@@ -142,13 +141,12 @@ fun StorageSettingsScreen(navController: NavController) {
                     when (val status = dataExportImportManager.checkImport(context, uri, importType)) {
                         is ImportStatus.NotEncryptedClean -> {
                             val data = dataExportImportManager.parseExportData(context, uri)
-                            // dataExportImportManager.clearDatabase()
-                            dataExportImportManager.importNotEncryptedData(data)
+                            dataExportImportManager.importCleanNotEncryptedData(data)
                             Toast.makeText(context, "Импорт (clean) завершён", Toast.LENGTH_SHORT).show()
                         }
                         is ImportStatus.NotEncryptedMerge -> {
                             val data = dataExportImportManager.parseExportData(context, uri)
-                            dataExportImportManager.importNotEncryptedData(data)
+                            dataExportImportManager.importMergeNotEncryptedData(data)
                             Toast.makeText(context, "Импорт (merge) завершён", Toast.LENGTH_SHORT).show()
                         }
                         is ImportStatus.EncryptedCleanNeeded -> {
