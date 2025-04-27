@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ExportData(
-    val encrypted: Boolean,
+    val encrypted: String?,
     val salt: String,
     val passwords: List<PasswordEntity>,
     val cards: List<CardEntity>,

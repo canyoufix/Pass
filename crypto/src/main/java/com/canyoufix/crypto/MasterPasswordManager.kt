@@ -33,11 +33,11 @@ class MasterPasswordManager(
 
             return when {
                 decryptedRealBlock == SecurityConfig.TEST_BLOCK -> {
-                    SessionKeyHolder.key = key
+                    SessionAESKeyHolder.setKey(key)
                     AuthResult.Success
                 }
                 decryptedFakeBlock == SecurityConfig.FAKE_TEST_BLOCK -> {
-                    SessionKeyHolder.key = key
+                    SessionAESKeyHolder.setKey(key)
                     AuthResult.FakeSuccess
                 }
                 else -> AuthResult.Failure("Неверный пароль!")
@@ -67,7 +67,7 @@ class MasterPasswordManager(
 
         prefsManager.saveSalt(salt)
         prefsManager.saveEncryptedTestBlock(testBlock)
-        SessionKeyHolder.key = masterKey
+        SessionAESKeyHolder.setKey(masterKey)
 
         if (fakePassword.isNotEmpty()) {
             val fakeKey = cryptoManager.deriveKeyFromPassword(fakePassword, salt)

@@ -3,27 +3,20 @@ package com.canyoufix.ui.screens.settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,21 +24,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.ImeAction
 import androidx.navigation.NavController
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.MasterPasswordManager
 import com.canyoufix.crypto.SecurePrefsManager
-import com.canyoufix.crypto.SecurityConfig
-import com.canyoufix.crypto.SessionKeyHolder
-import com.canyoufix.data.json.ExportManager
+import com.canyoufix.data.dto.ExportData
+import com.canyoufix.data.json.DataExportImportManager
+import com.canyoufix.data.json.ImportStatus
 import com.canyoufix.data.repository.CardRepository
 import com.canyoufix.data.repository.NoteRepository
 import com.canyoufix.data.repository.PasswordRepository
+import com.canyoufix.ui.components.password.PasswordDialog
+import com.canyoufix.ui.components.password.PasswordDialogWithRadioButtons
 import com.canyoufix.ui.components.password.PasswordTextField
-import com.canyoufix.ui.components.password.rememberPasswordVisibilityState
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -62,8 +54,8 @@ fun StorageSettingsScreen(navController: NavController) {
     val cryptoManager = remember { CryptoManager }
     val masterPasswordManager = remember { MasterPasswordManager(prefsManager, cryptoManager) }
 
-    val exportManager = remember {
-        ExportManager(
+    val dataExportImportManager = remember {
+        DataExportImportManager(
             noteRepository = noteRepository,
             cardRepository = cardRepository,
             passwordRepository = passwordRepository,
@@ -72,17 +64,20 @@ fun StorageSettingsScreen(navController: NavController) {
     }
 
     var showPasswordDialog by remember { mutableStateOf(false) }
-    var passwordInput by remember { mutableStateOf("") }
+    var showImportPasswordDialog by remember { mutableStateOf(false) }
+    var passwordInputForExport by remember { mutableStateOf("") }  // Изменяем имя переменной
+    var passwordInputForImport by remember { mutableStateOf("") }  // Новая переменная для пароля импорта
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var exportReady by remember { mutableStateOf(false) }
     var exportEncrypted by remember { mutableStateOf(true) }
+    var importType by remember { mutableStateOf("clean") } // "clean" или "merge"
 
     val exportLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/json"),
         onResult = { uri ->
             if (uri != null) {
                 scope.launch {
-                    val result = exportManager.exportAll(context, uri, exportEncrypted)
+                    val result = dataExportImportManager.exportAll(context, uri, exportEncrypted)
                     result.onSuccess {
                         Toast.makeText(context, "Экспорт завершён!", Toast.LENGTH_LONG).show()
                     }.onFailure { error ->
@@ -91,6 +86,82 @@ fun StorageSettingsScreen(navController: NavController) {
                             "Ошибка экспорта: ${error.localizedMessage}",
                             Toast.LENGTH_LONG
                         ).show()
+                    }
+                }
+            }
+        }
+    )
+
+    var currentExportData by remember { mutableStateOf<ExportData?>(null) }
+
+    // Новое состояние для диалога импорта зашифрованных данных
+    var showEncryptedImportDialog by remember { mutableStateOf(false) }
+
+    // Новый диалог импорта
+    if (showEncryptedImportDialog) {
+        PasswordDialog(
+            title = "Импорт зашифрованных данных",
+            passwordInput = passwordInputForImport,  // Используем новую переменную
+            onPasswordChange = { passwordInputForImport = it },  // Обновляем состояние для импорта
+            errorMessage = errorMessage,
+            onConfirm = { password ->
+                if (password.isBlank()) {
+                    errorMessage = "Введите пароль"
+                    return@PasswordDialog
+                }
+
+                scope.launch {
+                    try {
+                        currentExportData?.let { data ->
+                            if (importType == "clean") {
+                                // dataExportImportManager.clearDatabase()
+                            }
+                            dataExportImportManager.importEncryptedData(data, password)
+                            Toast.makeText(context, "Импорт завершён", Toast.LENGTH_SHORT).show()
+                        }
+                        showEncryptedImportDialog = false
+                    } catch (e: Exception) {
+                        errorMessage = "Ошибка: ${e.localizedMessage}"
+                    }
+                }
+            },
+            onDismiss = {
+                showEncryptedImportDialog = false
+                passwordInputForImport = ""  // Сбрасываем пароль при закрытии
+                errorMessage = null
+            }
+        )
+    }
+
+    // Обновленный обработчик в importLauncher
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            if (uri != null) {
+                scope.launch {
+                    when (val status = dataExportImportManager.checkImport(context, uri, importType)) {
+                        is ImportStatus.NotEncryptedClean -> {
+                            val data = dataExportImportManager.parseExportData(context, uri)
+                            // dataExportImportManager.clearDatabase()
+                            dataExportImportManager.importNotEncryptedData(data)
+                            Toast.makeText(context, "Импорт (clean) завершён", Toast.LENGTH_SHORT).show()
+                        }
+                        is ImportStatus.NotEncryptedMerge -> {
+                            val data = dataExportImportManager.parseExportData(context, uri)
+                            dataExportImportManager.importNotEncryptedData(data)
+                            Toast.makeText(context, "Импорт (merge) завершён", Toast.LENGTH_SHORT).show()
+                        }
+                        is ImportStatus.EncryptedCleanNeeded -> {
+                            currentExportData = dataExportImportManager.parseExportData(context, uri)
+                            showEncryptedImportDialog = true
+                        }
+                        is ImportStatus.EncryptedMergeNeeded -> {
+                            currentExportData = dataExportImportManager.parseExportData(context, uri)
+                            showEncryptedImportDialog = true
+                        }
+                        is ImportStatus.Error -> {
+                            Toast.makeText(context, status.message, Toast.LENGTH_LONG).show()
+                        }
                     }
                 }
             }
@@ -111,7 +182,11 @@ fun StorageSettingsScreen(navController: NavController) {
         }
 
         Button(
-            onClick = { /* Импорт позже */ },
+            onClick = {
+                showImportPasswordDialog = true
+                passwordInputForImport = ""  // Сбрасываем переменную для импорта
+                errorMessage = null
+            },
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Импорт данных")
@@ -119,89 +194,82 @@ fun StorageSettingsScreen(navController: NavController) {
     }
 
     if (showPasswordDialog) {
-        AlertDialog(
-            onDismissRequest = {
+        PasswordDialogWithRadioButtons(
+            title = "Подтверждение пароля",
+            onConfirm = { password ->
+                if (password.isBlank()) {
+                    errorMessage = "Введите пароль"
+                    return@PasswordDialogWithRadioButtons
+                }
+
+                if (masterPasswordManager.verifyMasterPassword(password)) {
+                    showPasswordDialog = false
+                    passwordInputForExport = ""  // Сбрасываем переменную для экспорта
+                    errorMessage = null
+                    exportReady = true
+                } else {
+                    errorMessage = "Неверный пароль!"
+                }
+            },
+            onDismiss = {
                 showPasswordDialog = false
-                passwordInput = ""
+                passwordInputForExport = ""  // Сбрасываем переменную для экспорта
                 errorMessage = null
             },
-            title = { Text("Подтверждение пароля") },
-            text = {
-                Column {
-                    Text("Введите мастер-пароль для подтверждения экспорта")
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    PasswordTextField(
-                        password = passwordInput,
-                        onPasswordChange = { passwordInput = it },
-                        label = "Мастер-пароль",
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text("Тип экспорта:", style = MaterialTheme.typography.bodyMedium)
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = exportEncrypted,
-                                onClick = { exportEncrypted = true }
-                            )
-                            Text("Зашифрованный", modifier = Modifier.padding(start = 8.dp))
-                        }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            RadioButton(
-                                selected = !exportEncrypted,
-                                onClick = { exportEncrypted = false }
-                            )
-                            Text("Незашифрованный", modifier = Modifier.padding(start = 8.dp))
-                        }
-                    }
-
-                    errorMessage?.let {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = it,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
-                }
+            errorMessage = errorMessage,
+            passwordInput = passwordInputForExport,  // Используем переменную для экспорта
+            onPasswordChange = { passwordInputForExport = it },  // Обновляем состояние для экспорта
+            radioOptions = listOf(
+                "Зашифрованный" to exportEncrypted,
+                "Незашифрованный" to !exportEncrypted
+            ),
+            onRadioOptionChange = { selected ->
+                exportEncrypted = selected == "Зашифрованный"
             },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        if (passwordInput.isBlank()) {
-                            errorMessage = "Введите пароль"
-                            return@TextButton
-                        }
-
-                        if (masterPasswordManager.verifyMasterPassword(passwordInput)) {
-                            showPasswordDialog = false
-                            passwordInput = ""
-                            errorMessage = null
-                            exportReady = true
-                        } else {
-                            errorMessage = "Неверный пароль!"
-                        }
-                    }
-                ) {
-                    Text("Подтвердить")
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showPasswordDialog = false
-                        passwordInput = ""
-                        errorMessage = null
-                    }
-                ) {
-                    Text("Отмена")
-                }
-            }
+            confirmText = "Подтвердить",
+            dismissText = "Отмена"
         )
     }
+
+    if (showImportPasswordDialog) {
+        PasswordDialogWithRadioButtons(
+            title = "Импорт данных",
+            onConfirm = { password ->
+                if (password.isBlank()) {
+                    errorMessage = "Введите пароль"
+                    return@PasswordDialogWithRadioButtons
+                }
+
+                if (!masterPasswordManager.verifyMasterPassword(password)) {
+                    errorMessage = "Неверный пароль!"
+                    return@PasswordDialogWithRadioButtons
+                }
+
+                showImportPasswordDialog = false
+                passwordInputForImport = ""  // Сбрасываем переменную для импорта
+                errorMessage = null
+                importLauncher.launch(arrayOf("application/json"))
+            },
+            onDismiss = {
+                showImportPasswordDialog = false
+                passwordInputForImport = ""  // Сбрасываем переменную для импорта
+                errorMessage = null
+            },
+            errorMessage = errorMessage,
+            passwordInput = passwordInputForImport,  // Используем переменную для импорта
+            onPasswordChange = { passwordInputForImport = it },  // Обновляем состояние для импорта
+            radioOptions = listOf(
+                "Очистить и импортировать" to (importType == "clean"),
+                "Добавить к существующим" to (importType == "merge")
+            ),
+            onRadioOptionChange = { selected ->
+                importType = if (selected == "Очистить и импортировать") "clean" else "merge"
+            },
+            confirmText = "Продолжить",
+            dismissText = "Отмена"
+        )
+    }
+
 
     LaunchedEffect(exportReady) {
         if (exportReady) {
@@ -210,4 +278,3 @@ fun StorageSettingsScreen(navController: NavController) {
         }
     }
 }
-

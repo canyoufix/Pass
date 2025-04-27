@@ -1,12 +1,12 @@
 package com.canyoufix.data.repository
 
 import com.canyoufix.crypto.CryptoManager
-import com.canyoufix.crypto.SessionKeyHolder
+import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.dao.CardDao
 import com.canyoufix.data.entity.CardEntity
-import com.canyoufix.data.entity.NoteEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.crypto.SecretKey
 
 class CardRepository(private val cardDao: CardDao) {
     private val cryptoManager = CryptoManager
@@ -37,8 +37,11 @@ class CardRepository(private val cardDao: CardDao) {
     }
 
     private fun encryptCard(card: CardEntity): CardEntity {
-        val key = SessionKeyHolder.key ?: throw SecurityException("No active session key")
+        val key = SessionAESKeyHolder.key
+        return encryptCard(card, key)
+    }
 
+    private fun encryptCard(card: CardEntity, key: SecretKey): CardEntity {
         return card.copy(
             title = cryptoManager.encrypt(card.title, key),
             cardNumber = cryptoManager.encrypt(card.cardNumber, key),
@@ -49,8 +52,11 @@ class CardRepository(private val cardDao: CardDao) {
     }
 
     private fun decryptCard(card: CardEntity): CardEntity {
-        val key = SessionKeyHolder.key ?: throw SecurityException("No active session key")
+        val key = SessionAESKeyHolder.key
+        return decryptCard(card, key)
+    }
 
+    fun decryptCard(card: CardEntity, key: SecretKey): CardEntity {
         return card.copy(
             title = cryptoManager.decrypt(card.title, key) ?: "DECRYPTION_ERROR",
             cardNumber = cryptoManager.decrypt(card.cardNumber, key) ?: "",
@@ -61,6 +67,11 @@ class CardRepository(private val cardDao: CardDao) {
     }
 
     private fun decryptCards(cards: List<CardEntity>): List<CardEntity> {
-        return cards.map { decryptCard(it) }
+        val key = SessionAESKeyHolder.key
+        return decryptCards(cards, key)
+    }
+
+    private fun decryptCards(cards: List<CardEntity>, key: SecretKey): List<CardEntity> {
+        return cards.map { decryptCard(it, key) }
     }
 }

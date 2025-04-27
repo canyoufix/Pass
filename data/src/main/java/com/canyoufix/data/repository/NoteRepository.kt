@@ -3,19 +3,16 @@ package com.canyoufix.data.repository
 import com.canyoufix.data.dao.NoteDao
 import com.canyoufix.data.entity.NoteEntity
 import com.canyoufix.crypto.CryptoManager
-import com.canyoufix.crypto.SessionKeyHolder
-import com.canyoufix.data.entity.CardEntity
+import com.canyoufix.crypto.SessionAESKeyHolder
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import javax.crypto.SecretKey
 
 class NoteRepository(private val noteDao: NoteDao) {
     private val cryptoManager = CryptoManager
 
-    // Все заметки автоматически расшифровываются при получении
     val getAllNotes: Flow<List<NoteEntity>> = noteDao.getAll()
         .map { notes -> decryptNotes(notes) }
-
 
     val getAllEncryptedNotes: Flow<List<NoteEntity>> = noteDao.getAll()
 
@@ -40,8 +37,11 @@ class NoteRepository(private val noteDao: NoteDao) {
     }
 
     private fun encryptNote(note: NoteEntity): NoteEntity {
-        val key = SessionKeyHolder.key ?: throw SecurityException("No active session key")
+        val key = SessionAESKeyHolder.key
+        return encryptNote(note, key)
+    }
 
+    private fun encryptNote(note: NoteEntity, key: SecretKey): NoteEntity {
         return note.copy(
             title = cryptoManager.encrypt(note.title, key),
             content = cryptoManager.encrypt(note.content, key)
@@ -49,8 +49,11 @@ class NoteRepository(private val noteDao: NoteDao) {
     }
 
     private fun decryptNote(note: NoteEntity): NoteEntity {
-        val key = SessionKeyHolder.key ?: throw SecurityException("No active session key")
+        val key = SessionAESKeyHolder.key
+        return decryptNote(note, key)
+    }
 
+    fun decryptNote(note: NoteEntity, key: SecretKey): NoteEntity {
         return note.copy(
             title = cryptoManager.decrypt(note.title, key) ?: "DECRYPTION_ERROR",
             content = cryptoManager.decrypt(note.content, key) ?: ""
@@ -58,7 +61,11 @@ class NoteRepository(private val noteDao: NoteDao) {
     }
 
     private fun decryptNotes(notes: List<NoteEntity>): List<NoteEntity> {
-        return notes.map { decryptNote(it) }
+        val key = SessionAESKeyHolder.key
+        return decryptNotes(notes, key)
     }
 
+    private fun decryptNotes(notes: List<NoteEntity>, key: SecretKey): List<NoteEntity> {
+        return notes.map { decryptNote(it, key) }
+    }
 }

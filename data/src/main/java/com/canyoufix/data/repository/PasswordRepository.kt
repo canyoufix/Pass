@@ -1,12 +1,12 @@
 package com.canyoufix.data.repository
 
 import com.canyoufix.crypto.CryptoManager
-import com.canyoufix.crypto.SessionKeyHolder
+import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.dao.PasswordDao
-import com.canyoufix.data.entity.NoteEntity
 import com.canyoufix.data.entity.PasswordEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.crypto.SecretKey
 
 class PasswordRepository(private val passwordDao: PasswordDao) {
     private val cryptoManager = CryptoManager
@@ -37,8 +37,11 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     }
 
     private fun encryptPassword(password: PasswordEntity): PasswordEntity {
-        val key = SessionKeyHolder.key ?: throw SecurityException("No active session key")
+        val key = SessionAESKeyHolder.key
+        return encryptPassword(password, key)
+    }
 
+    private fun encryptPassword(password: PasswordEntity, key: SecretKey): PasswordEntity {
         return password.copy(
             title = cryptoManager.encrypt(password.title, key),
             site = cryptoManager.encrypt(password.site, key),
@@ -48,8 +51,11 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     }
 
     private fun decryptPassword(password: PasswordEntity): PasswordEntity {
-        val key = SessionKeyHolder.key ?: throw SecurityException("No active session key")
+        val key = SessionAESKeyHolder.key
+        return decryptPassword(password, key)
+    }
 
+    fun decryptPassword(password: PasswordEntity, key: SecretKey): PasswordEntity {
         return password.copy(
             title = cryptoManager.decrypt(password.title, key) ?: "DECRYPTION_ERROR",
             site = cryptoManager.decrypt(password.site, key) ?: "",
@@ -59,6 +65,11 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     }
 
     private fun decryptPasswords(passwords: List<PasswordEntity>): List<PasswordEntity> {
-        return passwords.map { decryptPassword(it) }
+        val key = SessionAESKeyHolder.key
+        return decryptPasswords(passwords, key)
+    }
+
+    private fun decryptPasswords(passwords: List<PasswordEntity>, key: SecretKey): List<PasswordEntity> {
+        return passwords.map { decryptPassword(it, key) }
     }
 }
