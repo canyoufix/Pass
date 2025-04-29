@@ -2,28 +2,31 @@ package com.canyoufix.autofill.service
 
 
 import android.app.assist.AssistStructure
+import android.content.IntentSender
+import android.net.Uri
 import android.os.CancellationSignal
 import android.service.autofill.*
-import android.text.InputType
 import android.util.Log
-import android.view.View
 import android.view.autofill.AutofillId
 import android.view.autofill.AutofillValue
 import android.widget.RemoteViews
+import com.canyoufix.autofill.R
+import com.canyoufix.autofill.auth.AuthHelper
+import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.repository.PasswordRepository
 import kotlinx.coroutines.*
 import org.koin.android.ext.android.inject
 import java.util.LinkedList
+import java.util.Locale
 
 class MyAutofillService : AutofillService() {
 
-    // Объявите свойство с инъекцией
     val passwordRepository: PasswordRepository by inject()
 
     override fun onCreate() {
         super.onCreate()
-        // Теперь passwordRepository уже доступен
     }
+
     override fun onFillRequest(
         request: FillRequest,
         cancellationSignal: CancellationSignal,
@@ -49,10 +52,9 @@ class MyAutofillService : AutofillService() {
 
         while (nodes.isNotEmpty()) {
             val node = nodes.poll()
-
             val autofillHints = node.autofillHints?.map { it.lowercase() }
 
-            if (autofillHints?.any { it.contains("username") || it.contains("email") } == true) {
+            if (autofillHints?.any { it.contains("username") || it.contains("email") || it.contains("login") } == true) {
                 usernameFieldId = node.autofillId
             } else if (autofillHints?.any { it.contains("password") } == true) {
                 passwordFieldId = node.autofillId
@@ -69,60 +71,66 @@ class MyAutofillService : AutofillService() {
             return
         }
 
-        // Теперь ищем подходящий аккаунт из базы
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val webDomain = findDomainFromStructure(structure) // Получить домен из структуры
-                Log.d("AutofillService", "Detected domain: $webDomain")
+                val responseBuilder = FillResponse.Builder()
 
-                val accounts = if (webDomain.isNotEmpty()) {
-                    passwordRepository.getAccountsByDomain(webDomain)
-                } else {
-                    emptyList()
+                if (!SessionAESKeyHolder.isAuthenticated) {
+                    val lockedDataset = Dataset.Builder().apply {
+                        val lockedView = RemoteViews(packageName, R.layout.autofill_locked).apply {
+                            setTextViewText(R.id.locked_text, "Хранилище защищено")
+                            setImageViewResource(R.id.locked_icon, R.drawable.ic_lock)
+                        }
+
+                        usernameFieldId?.let { fieldId ->
+                            setValue(fieldId, AutofillValue.forText(""), lockedView)
+                        }
+
+                        passwordFieldId?.let { fieldId ->
+                            setValue(fieldId, AutofillValue.forText(""), lockedView)
+                        }
+
+                        setId("AUTH_REQUIRED")
+                        setAuthentication(AuthHelper.createAuthIntentSender(this@MyAutofillService))
+                    }.build()
+
+                    responseBuilder.addDataset(lockedDataset)
                 }
 
-                val entry = accounts.firstOrNull()
+                if (SessionAESKeyHolder.isAuthenticated) {
+                    val webDomain = findDomainFromStructure(structure)
+                    val accounts = passwordRepository.getAccountsByDomain(webDomain)
 
-                if (entry != null) {
-                    val datasetBuilder = Dataset.Builder()
+                    accounts.forEach { entry ->
+                        val dataset = Dataset.Builder().apply {
+                            val remoteViews = RemoteViews(packageName, R.layout.autofill_item).apply {
+                                setTextViewText(R.id.username, entry.username)
+                                setTextViewText(R.id.source, "For: ${entry.site}")
+                            }
 
-                    usernameFieldId?.let {
-                        datasetBuilder.setValue(
-                            it,
-                            AutofillValue.forText(entry.username),
-                            createPresentation(entry.username)
-                        )
+                            usernameFieldId?.let { fieldId ->
+                                setValue(fieldId, AutofillValue.forText(entry.username), remoteViews)
+                            }
+
+                            passwordFieldId?.let { fieldId ->
+                                setValue(fieldId, AutofillValue.forText(entry.password), createPresentation("••••••••"))
+                            }
+                        }.build()
+
+                        responseBuilder.addDataset(dataset)
                     }
+                }
 
-                    passwordFieldId?.let {
-                        datasetBuilder.setValue(
-                            it,
-                            AutofillValue.forText(entry.password),
-                            createPresentation(entry.password)
-                        )
-                    }
-
-                    val dataset = datasetBuilder.build()
-                    val response = FillResponse.Builder()
-                        .addDataset(dataset)
-                        .build()
-
-                    withContext(Dispatchers.Main) {
-                        callback.onSuccess(response)
-                    }
-                } else {
-                    Log.w("AutofillService", "No account found for domain: $webDomain")
-                    withContext(Dispatchers.Main) {
-                        callback.onFailure("No account found")
-                    }
+                withContext(Dispatchers.Main) {
+                    callback.onSuccess(responseBuilder.build())
                 }
             } catch (e: Exception) {
-                Log.e("AutofillService", "Error during autofill: ${e.message}", e)
                 withContext(Dispatchers.Main) {
-                    callback.onFailure("Autofill error")
+                    callback.onFailure(e.message ?: "Ошибка автозаполнения")
                 }
             }
         }
+
     }
 
     override fun onSaveRequest(request: SaveRequest, callback: SaveCallback) {
@@ -139,18 +147,12 @@ class MyAutofillService : AutofillService() {
         val indent = "  ".repeat(depth)
         Log.d(
             "AutofillStructure",
-            "$indent class=${node.className}, id=${node.idEntryName()}, hint=${node.hint}, autofillHints=${node.autofillHints?.joinToString()}, inputType=${node.inputType}"
+            "$indent class=${node.className}, id=${node.idEntry}, hint=${node.hint}, " +
+                    "autofillHints=${node.autofillHints?.joinToString()}, " +
+                    "inputType=${node.inputType}, text=${node.text}"
         )
         for (i in 0 until node.childCount) {
             dumpStructure(node.getChildAt(i), depth + 1)
-        }
-    }
-
-    private fun AssistStructure.ViewNode.idEntryName(): String? {
-        return try {
-            this.idEntry
-        } catch (e: Exception) {
-            null
         }
     }
 
@@ -159,20 +161,59 @@ class MyAutofillService : AutofillService() {
             val rootNode = structure.getWindowNodeAt(i).rootViewNode
             val url = findWebDomain(rootNode)
             if (url.isNotEmpty()) {
-                return url
+                return extractDomain(url)
             }
         }
         return ""
     }
 
     private fun findWebDomain(node: AssistStructure.ViewNode): String {
-        node.webDomain?.let { return it }
-        for (i in 0 until node.childCount) {
-            val childDomain = findWebDomain(node.getChildAt(i))
-            if (childDomain.isNotEmpty()) {
-                return childDomain
+        node.webDomain?.let {
+            Log.d("DomainFinder", "Found webDomain: $it")
+            return it
+        }
+
+        when (node.idEntry) {
+            "mozac_browser_toolbar_url_view", "url_bar", "address_bar", "location_bar", "omnibox" -> {
+                val url = node.text?.toString() ?: ""
+                if (url.isNotEmpty()) {
+                    Log.d("DomainFinder", "Found URL in toolbar ($url)")
+                    return url
+                }
             }
         }
+
+        if (node.className == "android.widget.EditText" && node.text != null) {
+            val text = node.text.toString()
+            if (text.contains("http://") || text.contains("https://") || text.contains(".")) {
+                Log.d("DomainFinder", "Found URL-like text: $text")
+                return text
+            }
+        }
+
+        for (i in 0 until node.childCount) {
+            val childDomain = findWebDomain(node.getChildAt(i))
+            if (childDomain.isNotEmpty()) return childDomain
+        }
+
         return ""
+    }
+
+    private fun extractDomain(url: String): String {
+        if (url.isEmpty()) return ""
+        return try {
+            val fullUrl = when {
+                url.startsWith("http") -> url
+                url.contains("://") -> url
+                else -> "https://$url"
+            }
+
+            val uri = Uri.parse(fullUrl)
+            val host = uri.host ?: return ""
+            host.removePrefix("www.").lowercase(Locale.getDefault())
+        } catch (e: Exception) {
+            Log.e("DomainExtractor", "Error parsing URL: $url", e)
+            ""
+        }
     }
 }
