@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.canyoufix.pass"
-        minSdk = 26
+        minSdk = 28
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -45,6 +45,7 @@ dependencies {
     implementation(project(":ui"))
     implementation(project(":data"))
     implementation(project(":crypto"))
+    implementation(project(":autofill"))
 
     // Compose
     implementation(libs.ui) // Для UI компонентов Compose

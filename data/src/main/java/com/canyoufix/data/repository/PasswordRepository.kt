@@ -1,10 +1,12 @@
 package com.canyoufix.data.repository
 
+import android.net.Uri
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.dao.PasswordDao
 import com.canyoufix.data.entity.PasswordEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.crypto.SecretKey
 
@@ -71,5 +73,26 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
 
     private fun decryptPasswords(passwords: List<PasswordEntity>, key: SecretKey): List<PasswordEntity> {
         return passwords.map { decryptPassword(it, key) }
+    }
+
+    suspend fun getAccountsByDomain(domain: String): List<PasswordEntity> {
+        // Получаем все пароли, расшифрованные с помощью метода getAllPasswords
+        val allPasswords = getAllPasswords.first()
+
+        // Фильтруем пароли по домену
+        return allPasswords.filter { passwordEntity ->
+            val siteDomain = extractDomain(passwordEntity.site)
+            siteDomain.equals(domain, ignoreCase = true)
+        }
+    }
+
+    // Функция для извлечения домена из URL
+    private fun extractDomain(url: String): String {
+        return try {
+            val uri = Uri.parse(url)
+            uri.host ?: ""
+        } catch (e: Exception) {
+            ""
+        }
     }
 }
