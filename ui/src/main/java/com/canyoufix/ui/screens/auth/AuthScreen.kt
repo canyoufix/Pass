@@ -10,15 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,11 +31,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.MasterPasswordManager
 import com.canyoufix.crypto.SecurePrefsManager
 import com.canyoufix.data.database.DatabaseManager
+import com.canyoufix.ui.R
 import com.canyoufix.ui.components.password.PasswordTextField
 import kotlinx.coroutines.launch
 
@@ -97,17 +96,16 @@ fun AuthScreen(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Text(
-                    text = "Аутентификация",
+                    text = stringResource(R.string.authorization),
                     style = MaterialTheme.typography.headlineSmall
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-
                 PasswordTextField(
                     password = password,
                     onPasswordChange = { password = it },
-                    label = "Мастер-пароль",
+                    label = stringResource(R.string.master_password),
                     modifier = Modifier
                         .fillMaxWidth(),
                     focusRequester = focusRequester
@@ -130,28 +128,31 @@ fun AuthScreen(
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Войти")
+                    Text(stringResource(R.string.login))
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                val successMessage = stringResource(R.string.reset_all_complete)
+                val errorTemplate = stringResource(R.string.reset_error)
                 OutlinedButton(
                     onClick = {
+
                         coroutineScope.launch {
                             try {
                                 databaseManager.clearAllData()
                                 prefsManager.clearAllData()
                                 onResetComplete()
-                                errorMessage = "Все данные были сброшены!"
+                                errorMessage = successMessage
                             } catch (e: Exception) {
-                                errorMessage = "Ошибка при сбросе данных: ${e.message}"
+                                errorMessage = String.format(errorTemplate, e.message ?: "")
                             }
                             errorMessage?.let { onFail(it) }
                         }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Сбросить все данные")
+                    Text(stringResource(R.string.reset_all))
                 }
 
                 errorMessage?.let {

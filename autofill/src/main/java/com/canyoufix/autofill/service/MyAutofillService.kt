@@ -54,7 +54,8 @@ class MyAutofillService : AutofillService() {
             val node = nodes.poll()
             val autofillHints = node.autofillHints?.map { it.lowercase() }
 
-            if (autofillHints?.any { it.contains("username") || it.contains("email") || it.contains("login") } == true) {
+            if (autofillHints?.any { it.contains("username") ||
+                        it.contains("email") || it.contains("login") } == true) {
                 usernameFieldId = node.autofillId
             } else if (autofillHints?.any { it.contains("password") } == true) {
                 passwordFieldId = node.autofillId

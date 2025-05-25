@@ -30,10 +30,12 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.MasterPasswordManager
 import com.canyoufix.crypto.SecurePrefsManager
+import com.canyoufix.ui.R
 import com.canyoufix.ui.components.password.PasswordTextField
 
 @Composable
@@ -89,7 +91,7 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Установите мастер-пароль",
+                text = stringResource(R.string.setup_master_password),
                 style = MaterialTheme.typography.titleLarge
             )
 
@@ -98,7 +100,7 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
             PasswordTextField(
                 password = password,
                 onPasswordChange = { password = it },
-                label = "Мастер-пароль",
+                label = stringResource(R.string.master_password),
                 modifier = Modifier
                     .fillMaxWidth()
                     .focusRequester(focusRequester)
@@ -109,7 +111,7 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
             PasswordTextField(
                 password = confirmPassword,
                 onPasswordChange = { confirmPassword = it },
-                label = "Подтверждение пароля",
+                label = stringResource(R.string.confirm_password),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -118,7 +120,7 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
             PasswordTextField(
                 password = fakePassword,
                 onPasswordChange = { fakePassword = it },
-                label = "Фейковый мастер-пароль",
+                label = stringResource(R.string.fake_master_password),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -127,7 +129,7 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
             PasswordTextField(
                 password = confirmFakePassword,
                 onPasswordChange = { confirmFakePassword = it },
-                label = "Подтверждение фейкового пароля",
+                label = stringResource(R.string.confirm_fake_password),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -155,7 +157,7 @@ fun SetupScreen(onSetupComplete: () -> Unit) {
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Сохранить и продолжить")
+                Text(stringResource(R.string.save_and_continue))
             }
         }
     }

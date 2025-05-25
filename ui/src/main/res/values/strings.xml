@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Общие строки -->
+    <string name="save_and_continue">Сохранить и продолжить</string>
+
+    <!-- SetupScreen -->
+    <string name="setup_master_password">Установите мастер-пароль</string>
+    <string name="master_password">Мастер-пароль</string>
+    <string name="confirm_password">Подтверждение пароля</string>
+    <string name="fake_master_password">Ложный мастер-пароль</string>
+    <string name="confirm_fake_password">Подтверждение ложного пароля</string>
+
+    <!-- AuthScreen -->
+    <string name="authorization">Авторизация</string>
+    <string name="login">Войти</string>
+    <string name="reset_all">Сбросить все данные</string>
+    <string name="reset_all_complete">Все данные были сброшены!</string>
+    <string name="reset_error">Ошибка при сбросе данных: %s</string>
+</resources>
