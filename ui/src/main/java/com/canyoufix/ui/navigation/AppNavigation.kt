@@ -18,6 +18,7 @@ import com.canyoufix.ui.screens.menu.StorageScreen
 import com.canyoufix.ui.screens.settings.AppearanceSettingsScreen
 import com.canyoufix.ui.screens.settings.SecuritySettingsScreen
 import com.canyoufix.ui.screens.settings.StorageSettingsScreen
+import com.canyoufix.ui.screens.settings.SyncSettingsScreen
 import com.canyoufix.ui.screens.storage.CardScreen
 import com.canyoufix.ui.screens.storage.NoteScreen
 import com.canyoufix.ui.screens.storage.PasswordScreen
@@ -112,14 +113,15 @@ fun AppNavigation(navController: NavHostController, padding: PaddingValues) {
         composable("security_settings") {
             SecuritySettingsScreen(navController = navController)
         }
+        composable("sync_settings") {
+            SyncSettingsScreen(navController = navController)
+        }
         composable("storage_settings") {
             StorageSettingsScreen(navController = navController)
         }
         composable("appearance_settings") {
             AppearanceSettingsScreen(navController = navController)
         }
-
-
 
     }
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Switch
 import androidx.navigation.NavController
+import com.canyoufix.ui.components.SwitchPref
 
 @Composable
 fun SecuritySettingsScreen(navController: NavController) {
@@ -34,21 +35,5 @@ fun SecuritySettingsScreen(navController: NavController) {
         ) {
             Text("Изменить мастер-пароль")
         }
-    }
-}
-
-@Composable
-private fun SwitchPref(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(text = title)
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
