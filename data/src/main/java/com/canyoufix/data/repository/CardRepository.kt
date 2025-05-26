@@ -33,20 +33,21 @@ class CardRepository(
         cardDao.insert(encryptedCard)
 
         if (syncSettingsStore.isEnabled()) {
+            val queueEntity = QueueSyncEntity(
+                id = UUID.randomUUID().toString(),
+                type = "card",
+                action = "insert",
+                payload = Json.encodeToString(encryptedCard)
+            )
+            queueSyncRepository.insert(queueEntity)
+
             try {
                 val retrofit = retrofitClientProvider.getClient()
                 val dto = cardToDto(encryptedCard)
                 retrofit.cardApi.uploadCard(dto)
-            } catch (e: Exception) {
-                queueSyncRepository.insert(
-                    QueueSyncEntity(
-                        id = UUID.randomUUID().toString(),
-                        type = "card",
-                        action = "insert",
-                        payload = Json.encodeToString(encryptedCard),
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+                queueSyncRepository.delete(queueEntity)
+            } catch (_: Exception) {
+                // Оставляем в очереди
             }
         }
     }
@@ -56,20 +57,21 @@ class CardRepository(
         cardDao.update(encryptedCard)
 
         if (syncSettingsStore.isEnabled()) {
+            val queueEntity = QueueSyncEntity(
+                id = UUID.randomUUID().toString(),
+                type = "card",
+                action = "update",
+                payload = Json.encodeToString(encryptedCard)
+            )
+            queueSyncRepository.insert(queueEntity)
+
             try {
                 val retrofit = retrofitClientProvider.getClient()
                 val dto = cardToDto(encryptedCard)
                 retrofit.cardApi.updateCard(encryptedCard.id, dto)
-            } catch (e: Exception) {
-                queueSyncRepository.insert(
-                    QueueSyncEntity(
-                        id = UUID.randomUUID().toString(),
-                        type = "card",
-                        action = "update",
-                        payload = Json.encodeToString(encryptedCard),
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+                queueSyncRepository.delete(queueEntity)
+            } catch (_: Exception) {
+                // Оставляем в очереди
             }
         }
     }
@@ -79,22 +81,24 @@ class CardRepository(
         cardDao.delete(encryptedCard)
 
         if (syncSettingsStore.isEnabled()) {
+            val queueEntity = QueueSyncEntity(
+                id = UUID.randomUUID().toString(),
+                type = "card",
+                action = "delete",
+                payload = Json.encodeToString(encryptedCard)
+            )
+            queueSyncRepository.insert(queueEntity)
+
             try {
                 val retrofit = retrofitClientProvider.getClient()
                 retrofit.cardApi.deleteCard(encryptedCard.id)
-            } catch (e: Exception) {
-                queueSyncRepository.insert(
-                    QueueSyncEntity(
-                        id = UUID.randomUUID().toString(),
-                        type = "card",
-                        action = "delete",
-                        payload = Json.encodeToString(encryptedCard),
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+                queueSyncRepository.delete(queueEntity)
+            } catch (_: Exception) {
+                // Оставляем в очереди
             }
         }
     }
+
 
     fun getById(id: String): Flow<CardEntity?> {
         return cardDao.getById(id)

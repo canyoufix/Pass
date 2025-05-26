@@ -46,6 +46,7 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.android)
+    implementation(libs.androidx.work.runtime.ktx)
 
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)

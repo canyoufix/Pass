@@ -14,5 +14,4 @@ data class QueueSyncEntity(
     @ColumnInfo(name = "type") val type: String,       // Тип сущности: "card", "password", "note"
     @ColumnInfo(name = "action") val action: String,   // Тип действия: "insert", "update", "delete"
     @ColumnInfo(name = "payload") val payload: String, // JSON-представление объекта
-    @ColumnInfo(name = "timestamp") val timestamp: Long // Время добавления в очередь
 )

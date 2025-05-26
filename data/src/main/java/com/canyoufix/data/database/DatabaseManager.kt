@@ -11,6 +11,7 @@ class DatabaseManager(
         database.passwordDao().clearAll() // Очистка таблицы паролей
         database.cardDao().clearAll()     // Очистка таблицы карт
         database.noteDao().clearAll()     // Очистка таблицы заметок
+        database.queueSyncDao().clearAll()
 
         // Выполняем команду VACUUM для уменьшения размера базы данных
         databaseHelper.execSQL("VACUUM")

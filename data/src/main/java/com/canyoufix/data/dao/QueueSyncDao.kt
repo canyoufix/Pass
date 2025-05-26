@@ -13,7 +13,7 @@ interface QueueSyncDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(queueItem: QueueSyncEntity)
 
-    @Query("SELECT * FROM queue_sync ORDER BY timestamp ASC")
+    @Query("SELECT * FROM queue_sync")
     fun getAll(): Flow<List<QueueSyncEntity>>
 
     @Query("SELECT * FROM queue_sync WHERE id = :id")

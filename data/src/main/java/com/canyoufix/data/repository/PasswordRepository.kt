@@ -34,20 +34,21 @@ class PasswordRepository(
         passwordDao.insert(encrypted)
 
         if (syncSettingsStore.isEnabled()) {
+            val queueEntity = QueueSyncEntity(
+                id = UUID.randomUUID().toString(),
+                type = "password",
+                action = "insert",
+                payload = Json.encodeToString(encrypted)
+            )
+            queueSyncRepository.insert(queueEntity)
+
             try {
                 val retrofit = retrofitClientProvider.getClient()
                 val dto = passwordToDto(encrypted)
                 retrofit.passwordApi.uploadPassword(dto)
-            } catch (e: Exception) {
-                queueSyncRepository.insert(
-                    QueueSyncEntity(
-                        id = UUID.randomUUID().toString(),
-                        type = "password",
-                        action = "insert",
-                        payload = Json.encodeToString(encrypted),
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+                queueSyncRepository.delete(queueEntity)
+            } catch (_: Exception) {
+                // Оставляем в очереди
             }
         }
     }
@@ -57,20 +58,21 @@ class PasswordRepository(
         passwordDao.update(encrypted)
 
         if (syncSettingsStore.isEnabled()) {
+            val queueEntity = QueueSyncEntity(
+                id = UUID.randomUUID().toString(),
+                type = "password",
+                action = "update",
+                payload = Json.encodeToString(encrypted)
+            )
+            queueSyncRepository.insert(queueEntity)
+
             try {
                 val retrofit = retrofitClientProvider.getClient()
                 val dto = passwordToDto(encrypted)
                 retrofit.passwordApi.updatePassword(encrypted.id, dto)
-            } catch (e: Exception) {
-                queueSyncRepository.insert(
-                    QueueSyncEntity(
-                        id = UUID.randomUUID().toString(),
-                        type = "password",
-                        action = "update",
-                        payload = Json.encodeToString(encrypted),
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+                queueSyncRepository.delete(queueEntity)
+            } catch (_: Exception) {
+                // Оставляем в очереди
             }
         }
     }
@@ -80,22 +82,24 @@ class PasswordRepository(
         passwordDao.delete(encrypted)
 
         if (syncSettingsStore.isEnabled()) {
+            val queueEntity = QueueSyncEntity(
+                id = UUID.randomUUID().toString(),
+                type = "password",
+                action = "delete",
+                payload = Json.encodeToString(encrypted)
+            )
+            queueSyncRepository.insert(queueEntity)
+
             try {
                 val retrofit = retrofitClientProvider.getClient()
                 retrofit.passwordApi.deletePassword(encrypted.id)
-            } catch (e: Exception) {
-                queueSyncRepository.insert(
-                    QueueSyncEntity(
-                        id = UUID.randomUUID().toString(),
-                        type = "password",
-                        action = "delete",
-                        payload = Json.encodeToString(encrypted),
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+                queueSyncRepository.delete(queueEntity)
+            } catch (_: Exception) {
+                // Оставляем в очереди
             }
         }
     }
+
 
     fun getById(id: String): Flow<PasswordEntity?> {
         return passwordDao.getById(id)

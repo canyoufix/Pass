@@ -33,20 +33,23 @@ class NoteRepository(
         noteDao.insert(encryptedNote)
 
         if (syncSettingsStore.isEnabled()) {
+            val queueEntity = QueueSyncEntity(
+                id = UUID.randomUUID().toString(),
+                type = "note",
+                action = "insert",
+                payload = Json.encodeToString(encryptedNote)
+            )
+            queueSyncRepository.insert(queueEntity)
+
             try {
                 val retrofit = retrofitClientProvider.getClient()
                 val dto = noteToDto(encryptedNote)
                 retrofit.noteApi.uploadNote(dto)
-            } catch (e: Exception) {
-                queueSyncRepository.insert(
-                    QueueSyncEntity(
-                        id = UUID.randomUUID().toString(),
-                        type = "note",
-                        action = "insert",
-                        payload = Json.encodeToString(encryptedNote),
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+
+                // Удаляем из очереди, если успешно отправлено
+                queueSyncRepository.delete(queueEntity)
+            } catch (_: Exception) {
+                // Оставляем в очереди
             }
         }
     }
@@ -56,20 +59,23 @@ class NoteRepository(
         noteDao.update(encryptedNote)
 
         if (syncSettingsStore.isEnabled()) {
+            val queueEntity = QueueSyncEntity(
+                id = UUID.randomUUID().toString(),
+                type = "note",
+                action = "update",
+                payload = Json.encodeToString(encryptedNote)
+            )
+            queueSyncRepository.insert(queueEntity)
+
             try {
                 val retrofit = retrofitClientProvider.getClient()
                 val dto = noteToDto(encryptedNote)
                 retrofit.noteApi.updateNote(encryptedNote.id, dto)
-            } catch (e: Exception) {
-                queueSyncRepository.insert(
-                    QueueSyncEntity(
-                        id = UUID.randomUUID().toString(),
-                        type = "note",
-                        action = "update",
-                        payload = Json.encodeToString(encryptedNote),
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+
+                // Удаляем из очереди, если успешно отправлено
+                queueSyncRepository.delete(queueEntity)
+            } catch (_: Exception) {
+                // Оставляем в очереди
             }
         }
     }
@@ -79,22 +85,26 @@ class NoteRepository(
         noteDao.delete(encryptedNote)
 
         if (syncSettingsStore.isEnabled()) {
+            val queueEntity = QueueSyncEntity(
+                id = UUID.randomUUID().toString(),
+                type = "note",
+                action = "delete",
+                payload = Json.encodeToString(encryptedNote)
+            )
+            queueSyncRepository.insert(queueEntity)
+
             try {
                 val retrofit = retrofitClientProvider.getClient()
                 retrofit.noteApi.deleteNote(encryptedNote.id)
-            } catch (e: Exception) {
-                queueSyncRepository.insert(
-                    QueueSyncEntity(
-                        id = UUID.randomUUID().toString(),
-                        type = "note",
-                        action = "delete",
-                        payload = Json.encodeToString(encryptedNote),
-                        timestamp = System.currentTimeMillis()
-                    )
-                )
+
+                // Удаляем из очереди, если успешно отправлено
+                queueSyncRepository.delete(queueEntity)
+            } catch (_: Exception) {
+                // Оставляем в очереди
             }
         }
     }
+
 
     fun getById(id: String): Flow<NoteEntity?> {
         return noteDao.getById(id)
