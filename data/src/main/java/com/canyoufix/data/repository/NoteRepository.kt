@@ -4,11 +4,19 @@ import com.canyoufix.data.dao.NoteDao
 import com.canyoufix.data.entity.NoteEntity
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SessionAESKeyHolder
+import com.canyoufix.settings.datastore.SyncSettingsStore
+import com.canyoufix.sync.dto.NoteDto
+import com.canyoufix.sync.retrofit.RetrofitClientProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.crypto.SecretKey
 
-class NoteRepository(private val noteDao: NoteDao) {
+
+class NoteRepository(
+    private val noteDao: NoteDao,
+    private val retrofitClientProvider: RetrofitClientProvider,
+    private val syncSettingsStore: SyncSettingsStore
+) {
     private val cryptoManager = CryptoManager
 
     val getAllNotes: Flow<List<NoteEntity>> = noteDao.getAll()
@@ -19,16 +27,45 @@ class NoteRepository(private val noteDao: NoteDao) {
     suspend fun insert(note: NoteEntity) {
         val encryptedNote = encryptNote(note)
         noteDao.insert(encryptedNote)
+
+        if (syncSettingsStore.isEnabled()) {
+            try {
+                val retrofit = retrofitClientProvider.getClient()
+                val dto = noteToDto(note)
+                retrofit.noteApi.uploadNote(dto)
+            } catch (e: Exception) {
+                // TO DO
+            }
+        }
     }
 
     suspend fun update(note: NoteEntity) {
         val encryptedNote = encryptNote(note)
         noteDao.update(encryptedNote)
+
+        if (syncSettingsStore.isEnabled()) {
+            try {
+                val retrofit = retrofitClientProvider.getClient()
+                val dto = noteToDto(note)
+                retrofit.noteApi.updateNote(note.id, dto)
+            } catch (e: Exception) {
+                // TO DO
+            }
+        }
     }
 
     suspend fun delete(note: NoteEntity) {
         val encryptedNote = encryptNote(note)
         noteDao.delete(encryptedNote)
+
+        if (syncSettingsStore.isEnabled()) {
+            try {
+                val retrofit = retrofitClientProvider.getClient()
+                retrofit.noteApi.deleteNote(note.id)
+            } catch (e: Exception) {
+                // TO DO
+            }
+        }
     }
 
     fun getById(id: String): Flow<NoteEntity?> {
@@ -36,6 +73,16 @@ class NoteRepository(private val noteDao: NoteDao) {
             .map { it?.let { decryptNote(it) } }
     }
 
+    // Вспомогательная функция для маппинга Entity -> DTO
+    private fun noteToDto(note: NoteEntity): NoteDto {
+        return NoteDto(
+            id = note.id,
+            title = note.title,
+            content = note.content
+        )
+    }
+
+    // Шифрование
     private fun encryptNote(note: NoteEntity): NoteEntity {
         val key = SessionAESKeyHolder.key
         return encryptNote(note, key)
@@ -48,6 +95,7 @@ class NoteRepository(private val noteDao: NoteDao) {
         )
     }
 
+    // Дешифрование
     private fun decryptNote(note: NoteEntity): NoteEntity {
         val key = SessionAESKeyHolder.key
         return decryptNote(note, key)

@@ -5,12 +5,19 @@ import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.dao.PasswordDao
 import com.canyoufix.data.entity.PasswordEntity
+import com.canyoufix.settings.datastore.SyncSettingsStore
+import com.canyoufix.sync.dto.PasswordDto
+import com.canyoufix.sync.retrofit.RetrofitClientProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.crypto.SecretKey
 
-class PasswordRepository(private val passwordDao: PasswordDao) {
+class PasswordRepository(
+    private val passwordDao: PasswordDao,
+    private val retrofitClientProvider: RetrofitClientProvider,
+    private val syncSettingsStore: SyncSettingsStore
+) {
     private val cryptoManager = CryptoManager
 
     val getAllPasswords: Flow<List<PasswordEntity>> = passwordDao.getAll()
@@ -21,16 +28,45 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     suspend fun insert(password: PasswordEntity) {
         val encryptedPassword = encryptPassword(password)
         passwordDao.insert(encryptedPassword)
+
+        if (syncSettingsStore.isEnabled()) {
+            try {
+                val retrofit = retrofitClientProvider.getClient()
+                val dto = passwordToDto(password)
+                retrofit.passwordApi.uploadPassword(dto)
+            } catch (e: Exception) {
+                // Обработка ошибки (например, логирование)
+            }
+        }
     }
 
     suspend fun update(password: PasswordEntity) {
         val encryptedPassword = encryptPassword(password)
         passwordDao.update(encryptedPassword)
+
+        if (syncSettingsStore.isEnabled()) {
+            try {
+                val retrofit = retrofitClientProvider.getClient()
+                val dto = passwordToDto(password)
+                retrofit.passwordApi.updatePassword(password.id, dto)
+            } catch (e: Exception) {
+                // Обработка ошибки
+            }
+        }
     }
 
     suspend fun delete(password: PasswordEntity) {
         val encryptedPassword = encryptPassword(password)
         passwordDao.delete(encryptedPassword)
+
+        if (syncSettingsStore.isEnabled()) {
+            try {
+                val retrofit = retrofitClientProvider.getClient()
+                retrofit.passwordApi.deletePassword(password.id)
+            } catch (e: Exception) {
+                // Обработка ошибки
+            }
+        }
     }
 
     fun getById(id: String): Flow<PasswordEntity?> {
@@ -38,6 +74,18 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
             .map { it?.let { decryptPassword(it) } }
     }
 
+    // Маппинг Entity -> DTO
+    private fun passwordToDto(password: PasswordEntity): PasswordDto {
+        return PasswordDto(
+            id = password.id,
+            title = password.title,
+            url = password.url,
+            username = password.username,
+            password = password.password
+        )
+    }
+
+    // Шифрование
     private fun encryptPassword(password: PasswordEntity): PasswordEntity {
         val key = SessionAESKeyHolder.key
         return encryptPassword(password, key)
@@ -52,6 +100,7 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
         )
     }
 
+    // Дешифрование
     private fun decryptPassword(password: PasswordEntity): PasswordEntity {
         val key = SessionAESKeyHolder.key
         return decryptPassword(password, key)
@@ -76,17 +125,13 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     }
 
     suspend fun getAccountsByDomain(domain: String): List<PasswordEntity> {
-        // Получаем все пароли, расшифрованные с помощью метода getAllPasswords
         val allPasswords = getAllPasswords.first()
-
-        // Фильтруем пароли по домену
         return allPasswords.filter { passwordEntity ->
             val siteDomain = extractDomain(passwordEntity.url)
             siteDomain.equals(domain, ignoreCase = true)
         }
     }
 
-    // Функция для извлечения домена из URL
     private fun extractDomain(url: String): String {
         return try {
             val uri = Uri.parse(url)
@@ -96,3 +141,4 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
         }
     }
 }
+

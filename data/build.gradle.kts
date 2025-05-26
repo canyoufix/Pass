@@ -39,10 +39,14 @@ android {
 }
 
 dependencies {
+    implementation(project(":crypto"))
+    implementation(project(":settings"))
+    implementation(project(":sync"))
+    
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.android)
-    implementation(project(":crypto"))
+
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 

@@ -1,4 +1,4 @@
-package com.canyoufix.data.dto
+package com.canyoufix.sync.dto
 
 data class PasswordDto(
     val id: String,

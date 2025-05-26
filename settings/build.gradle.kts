@@ -1,17 +1,14 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
-
-    // Compose compiler
-    alias(libs.plugins.kotlin.compose)
 }
 
 android {
-    namespace = "com.canyoufix.ui"
+    namespace = "com.canyoufix.settings"
     compileSdk = 35
 
     defaultConfig {
-        minSdk = 28
+        minSdk = 26
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
@@ -36,25 +33,6 @@ android {
 }
 
 dependencies {
-    // Compose
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(project(":data"))
-    implementation(project(":crypto"))
-    implementation(libs.androidx.espresso.core)
-    implementation(project(":settings"))
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-
-    implementation(libs.ui) // Для UI компонентов Compose
-    implementation(libs.material3) // Для Material 3
-    implementation(libs.androidx.foundation) // Для Column, Spacer и других
-    implementation(libs.ui.tooling.preview) // Для Preview
-    implementation(libs.androidx.navigation.compose) // Для навигации
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation (libs.androidx.material.icons.extended)
-
-    // Koin
-    implementation (libs.koin.androidx.compose)
-
     // DataStore
     implementation(libs.androidx.datastore.preferences)
 

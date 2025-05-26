@@ -7,6 +7,7 @@ import com.canyoufix.autofill.auth.AutofillAuthBridge
 import com.canyoufix.data.di.databaseModule
 import com.canyoufix.data.di.repositoryModule
 import com.canyoufix.data.di.viewModelModule
+import com.canyoufix.pass.di.networkModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
@@ -15,7 +16,12 @@ class MyApp : Application() {
         super.onCreate()
         startKoin {
             androidContext(this@MyApp)
-            modules(databaseModule, repositoryModule, viewModelModule)
+            modules(
+                databaseModule,
+                repositoryModule,
+                viewModelModule,
+                networkModule
+            )
         }
 
         AutofillAuthBridge.initialize(object : AuthIntentCreator {

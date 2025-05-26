@@ -4,11 +4,19 @@ import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.dao.CardDao
 import com.canyoufix.data.entity.CardEntity
+import com.canyoufix.settings.datastore.SyncSettingsStore
+import com.canyoufix.sync.dto.CardDto
+import com.canyoufix.sync.retrofit.RetrofitClientProvider
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.crypto.SecretKey
 
-class CardRepository(private val cardDao: CardDao) {
+class CardRepository(
+    private val cardDao: CardDao,
+    private val retrofitClientProvider: RetrofitClientProvider,
+    private val syncSettingsStore: SyncSettingsStore
+) {
     private val cryptoManager = CryptoManager
 
     val getAllCards: Flow<List<CardEntity>> = cardDao.getAll()
@@ -19,16 +27,45 @@ class CardRepository(private val cardDao: CardDao) {
     suspend fun insert(card: CardEntity) {
         val encryptedCard = encryptCard(card)
         cardDao.insert(encryptedCard)
+
+        if (syncSettingsStore.isEnabled()) {
+            try {
+                val retrofit = retrofitClientProvider.getClient()
+                val dto = cardToDto(card)
+                retrofit.cardApi.uploadCard(dto)
+            } catch (e: Exception) {
+                // TODO: обработка ошибок
+            }
+        }
     }
 
     suspend fun update(card: CardEntity) {
         val encryptedCard = encryptCard(card)
         cardDao.update(encryptedCard)
+
+        if (syncSettingsStore.isEnabled()) {
+            try {
+                val retrofit = retrofitClientProvider.getClient()
+                val dto = cardToDto(card)
+                retrofit.cardApi.updateCard(card.id, dto)
+            } catch (e: Exception) {
+                // TODO: обработка ошибок
+            }
+        }
     }
 
     suspend fun delete(card: CardEntity) {
         val encryptedCard = encryptCard(card)
         cardDao.delete(encryptedCard)
+
+        if (syncSettingsStore.isEnabled()) {
+            try {
+                val retrofit = retrofitClientProvider.getClient()
+                retrofit.cardApi.deleteCard(card.id)
+            } catch (e: Exception) {
+                // TODO: обработка ошибок
+            }
+        }
     }
 
     fun getById(id: String): Flow<CardEntity?> {
@@ -36,6 +73,18 @@ class CardRepository(private val cardDao: CardDao) {
             .map { it?.let { decryptCard(it) } }
     }
 
+    private fun cardToDto(card: CardEntity): CardDto {
+        return CardDto(
+            id = card.id,
+            title = card.title,
+            number = card.number,
+            expiryDate = card.expiryDate,
+            cvc = card.cvc,
+            holderName = card.holderName
+        )
+    }
+
+    // Шифрование
     private fun encryptCard(card: CardEntity): CardEntity {
         val key = SessionAESKeyHolder.key
         return encryptCard(card, key)
@@ -51,6 +100,7 @@ class CardRepository(private val cardDao: CardDao) {
         )
     }
 
+    // Дешифрование
     private fun decryptCard(card: CardEntity): CardEntity {
         val key = SessionAESKeyHolder.key
         return decryptCard(card, key)
@@ -75,3 +125,4 @@ class CardRepository(private val cardDao: CardDao) {
         return cards.map { decryptCard(it, key) }
     }
 }
+

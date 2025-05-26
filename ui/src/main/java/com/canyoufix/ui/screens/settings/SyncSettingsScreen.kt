@@ -2,12 +2,10 @@ package com.canyoufix.ui.screens.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,10 +22,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.canyoufix.ui.components.SwitchPref
-import com.canyoufix.ui.datastore.SyncSettings
-import com.canyoufix.ui.datastore.SyncSettingsStore
+import com.canyoufix.settings.datastore.SyncSettingsStore
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun SyncSettingsScreen(navController: NavController) {
@@ -43,7 +39,7 @@ fun SyncSettingsScreen(navController: NavController) {
     LaunchedEffect(ipAddress, port, isSyncEnabled) {
         delay(500) // 500 мс после последнего изменения
         settingsStore.saveSettings(
-            SyncSettings(isSyncEnabled, ipAddress, port)
+            com.canyoufix.settings.datastore.SyncSettings(isSyncEnabled, ipAddress, port)
         )
     }
 

@@ -1,4 +1,4 @@
-package com.canyoufix.ui.datastore
+package com.canyoufix.settings.datastore
 
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 val Context.syncSettingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "sync_settings")
@@ -40,5 +41,10 @@ class SyncSettingsStore(private val context: Context) {
             prefs[SyncSettingsKeys.SYNC_IP] = syncSettings.ip
             prefs[SyncSettingsKeys.SYNC_PORT] = syncSettings.port
         }
+    }
+
+    // Добавляем эту функцию для удобства проверки включена ли синхронизация
+    suspend fun isEnabled(): Boolean {
+        return syncSettingsFlow.first().isEnabled
     }
 }
