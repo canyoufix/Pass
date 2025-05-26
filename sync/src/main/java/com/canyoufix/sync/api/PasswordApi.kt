@@ -9,10 +9,10 @@ import retrofit2.http.Path
 
 interface PasswordApi {
     @GET("passwords")
-    suspend fun getAllPasswords(): List<PasswordDto>
+    //suspend fun getAllPasswords(): List<PasswordDto>
 
     @POST("passwords")
-    suspend fun uploadPassword(@Body dto: PasswordDto): Response<Unit>
+    //suspend fun uploadPassword(@Body dto: PasswordDto): Response<Unit>
 
     @DELETE("passwords/{id}")
     suspend fun deletePassword(@Path("id") id: String): Response<Unit>

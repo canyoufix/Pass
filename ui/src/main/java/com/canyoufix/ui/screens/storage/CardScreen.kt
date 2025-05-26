@@ -46,7 +46,7 @@ fun CardScreen(navController: NavController, viewModel: CardViewModel = koinView
                 items(cards) { card ->
                     DataItemCard(
                         title = card.title,
-                        subtitle = card.cardNumber,
+                        subtitle = card.number,
                         onClick = { navController.navigate("cardDetail/${card.id}")
                         }
                     )

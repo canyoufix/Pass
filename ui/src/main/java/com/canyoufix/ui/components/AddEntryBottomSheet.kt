@@ -105,7 +105,7 @@ fun AddEntryBottomSheet(
                 scope.launch {
                     val entity = when (selectedCategory) {
                         "Пароль" -> PasswordEntity(title = title, url = site, username = username, password = password)
-                        "Карта" -> CardEntity(title = title, cardNumber = cardNumber, expiryDate = expiryDate, cvc = cvc, cardHolder = cardHolder)
+                        "Карта" -> CardEntity(title = title, number = cardNumber, expiryDate = expiryDate, cvc = cvc, holderName = cardHolder)
                         "Заметка" -> NoteEntity(title = title, content = noteContent)
                         else -> null
                     }

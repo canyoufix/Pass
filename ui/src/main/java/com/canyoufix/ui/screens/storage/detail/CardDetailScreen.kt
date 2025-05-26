@@ -44,10 +44,10 @@ fun CardDetailScreen(
     LaunchedEffect(card) {
         card?.let {
             title = it.title
-            cardNumber = it.cardNumber
+            cardNumber = it.number
             expiryDate = it.expiryDate
             cvc = it.cvc
-            cardHolder = it.cardHolder
+            cardHolder = it.holderName
         }
     }
 
@@ -126,10 +126,10 @@ fun CardDetailScreen(
                     viewModel.update(
                         card!!.copy(
                             title = title,
-                            cardNumber = cardNumber,
+                            number = cardNumber,
                             expiryDate = expiryDate,
                             cvc = cvc,
-                            cardHolder = cardHolder
+                            holderName = cardHolder
                         )
                     )
                     navController.popBackStack()

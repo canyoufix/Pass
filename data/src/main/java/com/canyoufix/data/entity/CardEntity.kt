@@ -13,8 +13,8 @@ data class CardEntity(
     @ColumnInfo(name = "id") val id: String = UUID.randomUUID().toString(),
 
     @ColumnInfo(name = "title") val title: String,
-    @ColumnInfo(name = "card_number") val cardNumber: String,
+    @ColumnInfo(name = "number") val number: String,
     @ColumnInfo(name = "expiry_date") val expiryDate: String,
     @ColumnInfo(name = "cvc") val cvc: String,
-    @ColumnInfo(name = "card_holder") val cardHolder: String
+    @ColumnInfo(name = "holder_name") val holderName: String
 )

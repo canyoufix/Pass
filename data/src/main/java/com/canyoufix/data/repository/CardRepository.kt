@@ -44,10 +44,10 @@ class CardRepository(private val cardDao: CardDao) {
     private fun encryptCard(card: CardEntity, key: SecretKey): CardEntity {
         return card.copy(
             title = cryptoManager.encrypt(card.title, key),
-            cardNumber = cryptoManager.encrypt(card.cardNumber, key),
+            number = cryptoManager.encrypt(card.number, key),
             expiryDate = cryptoManager.encrypt(card.expiryDate, key),
             cvc = cryptoManager.encrypt(card.cvc, key),
-            cardHolder = cryptoManager.encrypt(card.cardHolder, key)
+            holderName = cryptoManager.encrypt(card.holderName, key)
         )
     }
 
@@ -59,10 +59,10 @@ class CardRepository(private val cardDao: CardDao) {
     fun decryptCard(card: CardEntity, key: SecretKey): CardEntity {
         return card.copy(
             title = cryptoManager.decrypt(card.title, key) ?: "DECRYPTION_ERROR",
-            cardNumber = cryptoManager.decrypt(card.cardNumber, key) ?: "",
+            number = cryptoManager.decrypt(card.number, key) ?: "",
             expiryDate = cryptoManager.decrypt(card.expiryDate, key) ?: "",
             cvc = cryptoManager.decrypt(card.cvc, key) ?: "",
-            cardHolder = cryptoManager.decrypt(card.cardHolder, key) ?: ""
+            holderName = cryptoManager.decrypt(card.holderName, key) ?: ""
         )
     }
 
