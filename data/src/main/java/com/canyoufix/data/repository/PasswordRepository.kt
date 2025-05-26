@@ -32,7 +32,7 @@ class PasswordRepository(
         if (syncSettingsStore.isEnabled()) {
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                val dto = passwordToDto(password)
+                val dto = passwordToDto(encryptedPassword)
                 retrofit.passwordApi.uploadPassword(dto)
             } catch (e: Exception) {
                 // Обработка ошибки (например, логирование)
@@ -47,8 +47,8 @@ class PasswordRepository(
         if (syncSettingsStore.isEnabled()) {
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                val dto = passwordToDto(password)
-                retrofit.passwordApi.updatePassword(password.id, dto)
+                val dto = passwordToDto(encryptedPassword)
+                retrofit.passwordApi.updatePassword(encryptedPassword.id, dto)
             } catch (e: Exception) {
                 // Обработка ошибки
             }
@@ -62,7 +62,7 @@ class PasswordRepository(
         if (syncSettingsStore.isEnabled()) {
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                retrofit.passwordApi.deletePassword(password.id)
+                retrofit.passwordApi.deletePassword(encryptedPassword.id)
             } catch (e: Exception) {
                 // Обработка ошибки
             }

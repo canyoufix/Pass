@@ -31,7 +31,7 @@ class NoteRepository(
         if (syncSettingsStore.isEnabled()) {
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                val dto = noteToDto(note)
+                val dto = noteToDto(encryptedNote)
                 retrofit.noteApi.uploadNote(dto)
             } catch (e: Exception) {
                 // TO DO
@@ -46,8 +46,8 @@ class NoteRepository(
         if (syncSettingsStore.isEnabled()) {
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                val dto = noteToDto(note)
-                retrofit.noteApi.updateNote(note.id, dto)
+                val dto = noteToDto(encryptedNote)
+                retrofit.noteApi.updateNote(encryptedNote.id, dto)
             } catch (e: Exception) {
                 // TO DO
             }
@@ -61,7 +61,7 @@ class NoteRepository(
         if (syncSettingsStore.isEnabled()) {
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                retrofit.noteApi.deleteNote(note.id)
+                retrofit.noteApi.deleteNote(encryptedNote.id)
             } catch (e: Exception) {
                 // TO DO
             }

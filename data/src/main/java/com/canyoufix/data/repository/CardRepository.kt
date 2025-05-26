@@ -31,7 +31,7 @@ class CardRepository(
         if (syncSettingsStore.isEnabled()) {
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                val dto = cardToDto(card)
+                val dto = cardToDto(encryptedCard)
                 retrofit.cardApi.uploadCard(dto)
             } catch (e: Exception) {
                 // TODO: обработка ошибок
@@ -46,8 +46,8 @@ class CardRepository(
         if (syncSettingsStore.isEnabled()) {
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                val dto = cardToDto(card)
-                retrofit.cardApi.updateCard(card.id, dto)
+                val dto = cardToDto(encryptedCard)
+                retrofit.cardApi.updateCard(encryptedCard.id, dto)
             } catch (e: Exception) {
                 // TODO: обработка ошибок
             }
@@ -61,7 +61,7 @@ class CardRepository(
         if (syncSettingsStore.isEnabled()) {
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                retrofit.cardApi.deleteCard(card.id)
+                retrofit.cardApi.deleteCard(encryptedCard.id)
             } catch (e: Exception) {
                 // TODO: обработка ошибок
             }
