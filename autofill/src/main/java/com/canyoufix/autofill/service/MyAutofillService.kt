@@ -2,7 +2,6 @@ package com.canyoufix.autofill.service
 
 
 import android.app.assist.AssistStructure
-import android.content.IntentSender
 import android.net.Uri
 import android.os.CancellationSignal
 import android.service.autofill.*
@@ -106,7 +105,7 @@ class MyAutofillService : AutofillService() {
                         val dataset = Dataset.Builder().apply {
                             val remoteViews = RemoteViews(packageName, R.layout.autofill_item).apply {
                                 setTextViewText(R.id.username, entry.username)
-                                setTextViewText(R.id.source, "For: ${entry.site}")
+                                setTextViewText(R.id.source, "For: ${entry.url}")
                             }
 
                             usernameFieldId?.let { fieldId ->

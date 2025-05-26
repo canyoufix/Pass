@@ -44,7 +44,7 @@ fun PasswordDetailScreen(
     LaunchedEffect(password) {
         password?.let {
             title = it.title
-            site = it.site
+            site = it.url
             username = it.username
             userPassword = it.password
         }
@@ -116,7 +116,7 @@ fun PasswordDetailScreen(
                     viewModel.update(
                         password!!.copy(
                             title = title,
-                            site = site,
+                            url = site,
                             username = username,
                             password = userPassword
                         )

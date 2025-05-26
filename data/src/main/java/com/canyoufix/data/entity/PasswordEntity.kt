@@ -13,7 +13,7 @@ data class PasswordEntity(
     @ColumnInfo(name = "id") val id: String = UUID.randomUUID().toString(),
 
     @ColumnInfo(name = "title") val title: String,
-    @ColumnInfo(name = "site") val site: String,
+    @ColumnInfo(name = "url") val url: String,
     @ColumnInfo(name = "username") val username: String,
     @ColumnInfo(name = "password") val password: String
 )

@@ -81,6 +81,7 @@ fun StorageScreen(
             val success = CryptoManager.encryptFile(inputStream, outputFile, key)
 
             if (success) {
+
                 Toast.makeText(context, "Файл зашифрован: ${outputFile.name}", Toast.LENGTH_LONG).show()
             } else {
                 Toast.makeText(context, "Ошибка при шифровании файла", Toast.LENGTH_LONG).show()

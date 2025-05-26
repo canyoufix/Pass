@@ -46,7 +46,7 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     private fun encryptPassword(password: PasswordEntity, key: SecretKey): PasswordEntity {
         return password.copy(
             title = cryptoManager.encrypt(password.title, key),
-            site = cryptoManager.encrypt(password.site, key),
+            url = cryptoManager.encrypt(password.url, key),
             username = cryptoManager.encrypt(password.username, key),
             password = cryptoManager.encrypt(password.password, key)
         )
@@ -60,7 +60,7 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
     fun decryptPassword(password: PasswordEntity, key: SecretKey): PasswordEntity {
         return password.copy(
             title = cryptoManager.decrypt(password.title, key) ?: "DECRYPTION_ERROR",
-            site = cryptoManager.decrypt(password.site, key) ?: "",
+            url = cryptoManager.decrypt(password.url, key) ?: "",
             username = cryptoManager.decrypt(password.username, key) ?: "",
             password = cryptoManager.decrypt(password.password, key) ?: ""
         )
@@ -81,7 +81,7 @@ class PasswordRepository(private val passwordDao: PasswordDao) {
 
         // Фильтруем пароли по домену
         return allPasswords.filter { passwordEntity ->
-            val siteDomain = extractDomain(passwordEntity.site)
+            val siteDomain = extractDomain(passwordEntity.url)
             siteDomain.equals(domain, ignoreCase = true)
         }
     }
