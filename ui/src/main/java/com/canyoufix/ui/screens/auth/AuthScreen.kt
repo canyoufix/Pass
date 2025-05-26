@@ -40,6 +40,7 @@ import com.canyoufix.data.database.DatabaseManager
 import com.canyoufix.ui.R
 import com.canyoufix.ui.components.password.PasswordTextField
 import kotlinx.coroutines.launch
+import org.koin.java.KoinJavaComponent.getKoin
 
 @Composable
 fun AuthScreen(
@@ -51,7 +52,7 @@ fun AuthScreen(
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val prefsManager = remember { SecurePrefsManager(context) }
-    val databaseManager = remember { DatabaseManager(context) }
+    val databaseManager = remember { getKoin().get<DatabaseManager>() }
     val coroutineScope = rememberCoroutineScope()
 
     // Управление фокусом

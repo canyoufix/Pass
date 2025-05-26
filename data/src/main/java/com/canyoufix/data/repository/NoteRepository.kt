@@ -4,18 +4,22 @@ import com.canyoufix.data.dao.NoteDao
 import com.canyoufix.data.entity.NoteEntity
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SessionAESKeyHolder
+import com.canyoufix.data.entity.QueueSyncEntity
 import com.canyoufix.settings.datastore.SyncSettingsStore
 import com.canyoufix.sync.dto.NoteDto
 import com.canyoufix.sync.retrofit.RetrofitClientProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
+import java.util.UUID
 import javax.crypto.SecretKey
 
 
 class NoteRepository(
     private val noteDao: NoteDao,
     private val retrofitClientProvider: RetrofitClientProvider,
-    private val syncSettingsStore: SyncSettingsStore
+    private val syncSettingsStore: SyncSettingsStore,
+    private val queueSyncRepository: QueueSyncRepository
 ) {
     private val cryptoManager = CryptoManager
 
@@ -34,7 +38,15 @@ class NoteRepository(
                 val dto = noteToDto(encryptedNote)
                 retrofit.noteApi.uploadNote(dto)
             } catch (e: Exception) {
-                // TO DO
+                queueSyncRepository.insert(
+                    QueueSyncEntity(
+                        id = UUID.randomUUID().toString(),
+                        type = "note",
+                        action = "insert",
+                        payload = Json.encodeToString(encryptedNote),
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
             }
         }
     }
@@ -49,7 +61,15 @@ class NoteRepository(
                 val dto = noteToDto(encryptedNote)
                 retrofit.noteApi.updateNote(encryptedNote.id, dto)
             } catch (e: Exception) {
-                // TO DO
+                queueSyncRepository.insert(
+                    QueueSyncEntity(
+                        id = UUID.randomUUID().toString(),
+                        type = "note",
+                        action = "update",
+                        payload = Json.encodeToString(encryptedNote),
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
             }
         }
     }
@@ -63,7 +83,15 @@ class NoteRepository(
                 val retrofit = retrofitClientProvider.getClient()
                 retrofit.noteApi.deleteNote(encryptedNote.id)
             } catch (e: Exception) {
-                // TO DO
+                queueSyncRepository.insert(
+                    QueueSyncEntity(
+                        id = UUID.randomUUID().toString(),
+                        type = "note",
+                        action = "delete",
+                        payload = Json.encodeToString(encryptedNote),
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
             }
         }
     }
@@ -73,7 +101,6 @@ class NoteRepository(
             .map { it?.let { decryptNote(it) } }
     }
 
-    // Вспомогательная функция для маппинга Entity -> DTO
     private fun noteToDto(note: NoteEntity): NoteDto {
         return NoteDto(
             id = note.id,
@@ -82,7 +109,6 @@ class NoteRepository(
         )
     }
 
-    // Шифрование
     private fun encryptNote(note: NoteEntity): NoteEntity {
         val key = SessionAESKeyHolder.key
         return encryptNote(note, key)
@@ -95,7 +121,6 @@ class NoteRepository(
         )
     }
 
-    // Дешифрование
     private fun decryptNote(note: NoteEntity): NoteEntity {
         val key = SessionAESKeyHolder.key
         return decryptNote(note, key)

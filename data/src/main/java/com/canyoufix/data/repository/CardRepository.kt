@@ -4,18 +4,22 @@ import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.dao.CardDao
 import com.canyoufix.data.entity.CardEntity
+import com.canyoufix.data.entity.QueueSyncEntity
 import com.canyoufix.settings.datastore.SyncSettingsStore
 import com.canyoufix.sync.dto.CardDto
 import com.canyoufix.sync.retrofit.RetrofitClientProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
+import java.util.UUID
 import javax.crypto.SecretKey
 
 class CardRepository(
     private val cardDao: CardDao,
     private val retrofitClientProvider: RetrofitClientProvider,
-    private val syncSettingsStore: SyncSettingsStore
+    private val syncSettingsStore: SyncSettingsStore,
+    private val queueSyncRepository: QueueSyncRepository
 ) {
     private val cryptoManager = CryptoManager
 
@@ -34,7 +38,15 @@ class CardRepository(
                 val dto = cardToDto(encryptedCard)
                 retrofit.cardApi.uploadCard(dto)
             } catch (e: Exception) {
-                // TODO: обработка ошибок
+                queueSyncRepository.insert(
+                    QueueSyncEntity(
+                        id = UUID.randomUUID().toString(),
+                        type = "card",
+                        action = "insert",
+                        payload = Json.encodeToString(encryptedCard),
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
             }
         }
     }
@@ -49,7 +61,15 @@ class CardRepository(
                 val dto = cardToDto(encryptedCard)
                 retrofit.cardApi.updateCard(encryptedCard.id, dto)
             } catch (e: Exception) {
-                // TODO: обработка ошибок
+                queueSyncRepository.insert(
+                    QueueSyncEntity(
+                        id = UUID.randomUUID().toString(),
+                        type = "card",
+                        action = "update",
+                        payload = Json.encodeToString(encryptedCard),
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
             }
         }
     }
@@ -63,7 +83,15 @@ class CardRepository(
                 val retrofit = retrofitClientProvider.getClient()
                 retrofit.cardApi.deleteCard(encryptedCard.id)
             } catch (e: Exception) {
-                // TODO: обработка ошибок
+                queueSyncRepository.insert(
+                    QueueSyncEntity(
+                        id = UUID.randomUUID().toString(),
+                        type = "card",
+                        action = "delete",
+                        payload = Json.encodeToString(encryptedCard),
+                        timestamp = System.currentTimeMillis()
+                    )
+                )
             }
         }
     }
@@ -125,4 +153,5 @@ class CardRepository(
         return cards.map { decryptCard(it, key) }
     }
 }
+
 

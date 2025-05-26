@@ -11,7 +11,6 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PasswordDao {
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(password: PasswordEntity)
 

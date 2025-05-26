@@ -19,6 +19,7 @@ import com.canyoufix.data.dto.MetaInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import org.koin.java.KoinJavaComponent.getKoin
 import java.io.IOException
 
 class DataExportImportManager(
@@ -28,7 +29,9 @@ class DataExportImportManager(
     private val passwordRepository: PasswordRepository,
     private val securePrefsManager: SecurePrefsManager
 ) {
-    private val databaseManager = DatabaseManager(context)
+    private val databaseManager by lazy {
+        getKoin().get<DatabaseManager>()
+    }
 
 
     fun parseExportData(context: Context, uri: Uri): ExportData {

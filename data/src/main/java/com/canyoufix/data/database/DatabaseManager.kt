@@ -1,13 +1,10 @@
 package com.canyoufix.data.database
 
-import android.content.Context
-
-class DatabaseManager(context: Context) {
-    private val database: AppDatabase = AppDatabase.getInstance(context)
-
+class DatabaseManager(
+    private val database: AppDatabase // Внедряем через Koin
+) {
     // Получаем доступ к базе данных через SupportSQLiteDatabase
     private val databaseHelper = database.openHelper.writableDatabase
-
 
     // Метод для очистки всех данных из базы
     suspend fun clearAllData() {

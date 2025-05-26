@@ -1,4 +1,4 @@
-package com.canyoufix.data.di
+package com.canyoufix.pass.di
 
 import com.canyoufix.data.viewmodel.CardViewModel
 import com.canyoufix.data.viewmodel.NoteViewModel

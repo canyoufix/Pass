@@ -55,6 +55,10 @@ dependencies {
     implementation(libs.ui.tooling.preview) // Для Preview
     implementation(libs.androidx.navigation.compose) // Для навигации
 
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.lifecycle.viewmodel.android)
+
     // Koin
     implementation(project.dependencies.platform(libs.koin.bom))
     implementation(libs.koin.core)

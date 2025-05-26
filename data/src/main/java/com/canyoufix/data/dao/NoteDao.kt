@@ -7,7 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.canyoufix.data.entity.NoteEntity
-import com.canyoufix.data.entity.PasswordEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

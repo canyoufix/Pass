@@ -4,9 +4,9 @@ import android.app.Application
 import android.content.IntentSender
 import com.canyoufix.autofill.auth.AuthIntentCreator
 import com.canyoufix.autofill.auth.AutofillAuthBridge
-import com.canyoufix.data.di.databaseModule
-import com.canyoufix.data.di.repositoryModule
-import com.canyoufix.data.di.viewModelModule
+import com.canyoufix.pass.di.databaseModule
+import com.canyoufix.pass.di.repositoryModule
+import com.canyoufix.pass.di.viewModelModule
 import com.canyoufix.pass.di.networkModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
