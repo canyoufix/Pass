@@ -55,7 +55,16 @@ class PasswordRepository(
 
     suspend fun update(password: PasswordEntity) {
         val encrypted = encryptPassword(password)
-        passwordDao.update(encrypted)
+
+        val timestamp = System.currentTimeMillis()
+        passwordDao.update(
+            id = encrypted.id,
+            title = encrypted.title,
+            url = encrypted.url,
+            username = encrypted.username,
+            password = encrypted.password,
+            timestamp = timestamp
+        )
 
         if (syncSettingsStore.isEnabled()) {
             val queueEntity = QueueSyncEntity(
@@ -79,7 +88,12 @@ class PasswordRepository(
 
     suspend fun delete(password: PasswordEntity) {
         val encrypted = encryptPassword(password)
-        passwordDao.delete(encrypted)
+
+        val timestamp = System.currentTimeMillis()
+        passwordDao.delete(
+            id = encrypted.id,
+            timestamp = timestamp
+        )
 
         if (syncSettingsStore.isEnabled()) {
             val queueEntity = QueueSyncEntity(

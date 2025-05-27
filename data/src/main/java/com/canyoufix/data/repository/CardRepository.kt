@@ -54,7 +54,17 @@ class CardRepository(
 
     suspend fun update(card: CardEntity) {
         val encryptedCard = encryptCard(card)
-        cardDao.update(encryptedCard)
+
+        val timestamp = System.currentTimeMillis()
+        cardDao.update(
+            id = encryptedCard.id,
+            title = encryptedCard.title,
+            number = encryptedCard.number,
+            expiryDate = encryptedCard.expiryDate,
+            cvc = encryptedCard.cvc,
+            holderName = encryptedCard.holderName,
+            timestamp = timestamp
+        )
 
         if (syncSettingsStore.isEnabled()) {
             val queueEntity = QueueSyncEntity(
@@ -78,7 +88,12 @@ class CardRepository(
 
     suspend fun delete(card: CardEntity) {
         val encryptedCard = encryptCard(card)
-        cardDao.delete(encryptedCard)
+
+        val timestamp = System.currentTimeMillis()
+        cardDao.delete(
+            id = encryptedCard.id,
+            timestamp = timestamp
+        )
 
         if (syncSettingsStore.isEnabled()) {
             val queueEntity = QueueSyncEntity(

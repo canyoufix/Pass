@@ -14,18 +14,35 @@ interface PasswordDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(password: PasswordEntity)
 
-    @Update
-    suspend fun update(password: PasswordEntity)
+    @Query("""
+        UPDATE passwords SET 
+            title = :title, 
+            url = :url, 
+            username = :username, 
+            password = :password, 
+            last_modified = :timestamp 
+        WHERE id = :id
+    """)
+    suspend fun update(
+        id: String,
+        title: String,
+        url: String,
+        username: String,
+        password: String,
+        timestamp: Long
+    )
 
-    @Delete
-    suspend fun delete(password: PasswordEntity)
+    @Query("UPDATE passwords SET is_deleted = 1, last_modified = :timestamp WHERE id = :id")
+    suspend fun delete(id: String, timestamp: Long)
 
-    @Query("SELECT * FROM passwords ORDER BY title ASC")
+    @Query("SELECT * FROM passwords WHERE is_deleted = 0 ORDER BY last_modified DESC")
     fun getAll(): Flow<List<PasswordEntity>>
 
-    @Query("SELECT * FROM passwords WHERE id = :id LIMIT 1")
+    @Query("SELECT * FROM passwords WHERE id = :id AND is_deleted = 0 LIMIT 1")
     fun getById(id: String): Flow<PasswordEntity?>
 
     @Query("DELETE FROM passwords")
     suspend fun clearAll()
 }
+
+

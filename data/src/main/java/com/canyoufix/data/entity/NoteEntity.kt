@@ -13,5 +13,8 @@ data class NoteEntity(
     @ColumnInfo(name = "id") val id: String = UUID.randomUUID().toString(),
 
     @ColumnInfo(name = "title") val title: String,
-    @ColumnInfo(name = "content") val content: String
+    @ColumnInfo(name = "content") val content: String,
+
+    @ColumnInfo(name = "last_modified") val lastModified: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "is_deleted") val isDeleted: Boolean = false
 )

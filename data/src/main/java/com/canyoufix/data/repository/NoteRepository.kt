@@ -56,7 +56,14 @@ class NoteRepository(
 
     suspend fun update(note: NoteEntity) {
         val encryptedNote = encryptNote(note)
-        noteDao.update(encryptedNote)
+
+        val timestamp = System.currentTimeMillis()
+        noteDao.update(
+            id = encryptedNote.id,
+            title = encryptedNote.title,
+            content = encryptedNote.content,
+            timestamp = timestamp
+        )
 
         if (syncSettingsStore.isEnabled()) {
             val queueEntity = QueueSyncEntity(
@@ -82,7 +89,12 @@ class NoteRepository(
 
     suspend fun delete(note: NoteEntity) {
         val encryptedNote = encryptNote(note)
-        noteDao.delete(encryptedNote)
+
+        val timestamp = System.currentTimeMillis()
+        noteDao.delete(
+            id = encryptedNote.id,
+            timestamp = timestamp
+        )
 
         if (syncSettingsStore.isEnabled()) {
             val queueEntity = QueueSyncEntity(

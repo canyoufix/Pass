@@ -16,5 +16,8 @@ data class CardEntity(
     @ColumnInfo(name = "number") val number: String,
     @ColumnInfo(name = "expiry_date") val expiryDate: String,
     @ColumnInfo(name = "cvc") val cvc: String,
-    @ColumnInfo(name = "holder_name") val holderName: String
+    @ColumnInfo(name = "holder_name") val holderName: String,
+
+    @ColumnInfo(name = "last_modified") val lastModified: Long = System.currentTimeMillis(),
+    @ColumnInfo(name = "is_deleted") val isDeleted: Boolean = false
 )
