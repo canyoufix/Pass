@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.MasterPasswordManager
 import com.canyoufix.crypto.SecurePrefsManager
+import com.canyoufix.data.SyncManager
 import com.canyoufix.data.database.DatabaseManager
 import com.canyoufix.ui.R
 import com.canyoufix.ui.components.password.PasswordTextField
@@ -54,6 +55,8 @@ fun AuthScreen(
     val prefsManager = remember { SecurePrefsManager(context) }
     val databaseManager = remember { getKoin().get<DatabaseManager>() }
     val coroutineScope = rememberCoroutineScope()
+
+    val syncManager = remember { getKoin().get<SyncManager>() }
 
     // Управление фокусом
     val focusRequester = remember { FocusRequester() }
@@ -118,7 +121,11 @@ fun AuthScreen(
                     onClick = {
                         coroutineScope.launch {
                             when (val result = masterPasswordManager.authenticate(password)) {
-                                MasterPasswordManager.AuthResult.Success -> onSuccess()
+                                MasterPasswordManager.AuthResult.Success -> {
+                                    // Запускаем синхронизацию перед вызовом onSuccess()
+                                    syncManager.startSync()
+                                    onSuccess()
+                                }
                                 MasterPasswordManager.AuthResult.FakeSuccess -> onSuccess()
                                 is MasterPasswordManager.AuthResult.Failure -> {
                                     errorMessage = result.error

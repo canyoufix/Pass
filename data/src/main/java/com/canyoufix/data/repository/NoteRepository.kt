@@ -5,7 +5,10 @@ import com.canyoufix.data.entity.NoteEntity
 import com.canyoufix.crypto.CryptoManager
 import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.entity.QueueSyncEntity
+import com.canyoufix.data.mapping.DtoToEntity.toCardEntity
+import com.canyoufix.data.mapping.DtoToEntity.toNoteEntity
 import com.canyoufix.settings.datastore.SyncSettingsStore
+import com.canyoufix.sync.dto.CardDto
 import com.canyoufix.sync.dto.NoteDto
 import com.canyoufix.sync.retrofit.RetrofitClientProvider
 import kotlinx.coroutines.flow.Flow
@@ -52,6 +55,11 @@ class NoteRepository(
                 // Оставляем в очереди
             }
         }
+    }
+
+    suspend fun insertFromServer(noteDto: NoteDto) {
+        val entity = noteDto.toNoteEntity()
+        noteDao.insert(entity)
     }
 
     suspend fun update(note: NoteEntity) {

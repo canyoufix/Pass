@@ -10,6 +10,7 @@ import retrofit2.http.HTTP
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface NoteApi {
 
@@ -24,5 +25,8 @@ interface NoteApi {
 
     @HTTP(method = "DELETE", path = "notes/{id}", hasBody = true)
     suspend fun deleteNote(@Path("id") id: String, @Body dto: NoteDto): Response<Unit>
+
+    @GET("notes/sync")
+    suspend fun getNotesSince(@Query("since") lastSync: Long): List<NoteDto>
 }
 

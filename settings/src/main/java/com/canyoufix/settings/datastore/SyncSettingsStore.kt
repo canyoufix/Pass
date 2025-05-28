@@ -16,12 +16,14 @@ object SyncSettingsKeys {
     val SYNC_ENABLED = booleanPreferencesKey("sync_enabled")
     val SYNC_IP = stringPreferencesKey("sync_ip")
     val SYNC_PORT = stringPreferencesKey("sync_port")
+    val LAST_SYNC_TIME = longPreferencesKey("last_sync_time")
 }
 
 data class SyncSettings(
     val isEnabled: Boolean,
     val ip: String,
-    val port: String
+    val port: String,
+    val lastSyncTime: Long = 0L
 )
 
 class SyncSettingsStore(private val context: Context) {
@@ -31,7 +33,8 @@ class SyncSettingsStore(private val context: Context) {
             SyncSettings(
                 isEnabled = prefs[SyncSettingsKeys.SYNC_ENABLED] ?: false,
                 ip = prefs[SyncSettingsKeys.SYNC_IP] ?: "",
-                port = prefs[SyncSettingsKeys.SYNC_PORT] ?: ""
+                port = prefs[SyncSettingsKeys.SYNC_PORT] ?: "",
+                lastSyncTime = prefs[SyncSettingsKeys.LAST_SYNC_TIME] ?: 0L
             )
         }
 
@@ -40,11 +43,25 @@ class SyncSettingsStore(private val context: Context) {
             prefs[SyncSettingsKeys.SYNC_ENABLED] = syncSettings.isEnabled
             prefs[SyncSettingsKeys.SYNC_IP] = syncSettings.ip
             prefs[SyncSettingsKeys.SYNC_PORT] = syncSettings.port
+            prefs[SyncSettingsKeys.LAST_SYNC_TIME] = syncSettings.lastSyncTime
         }
     }
 
-    // Добавляем эту функцию для удобства проверки включена ли синхронизация
     suspend fun isEnabled(): Boolean {
         return syncSettingsFlow.first().isEnabled
     }
+
+
+    suspend fun saveLastSyncTime(time: Long) {
+        context.syncSettingsDataStore.edit { prefs ->
+            prefs[SyncSettingsKeys.LAST_SYNC_TIME] = time
+        }
+    }
+
+    suspend fun getLastSyncTime(): Long {
+        return context.syncSettingsDataStore.data
+            .map { prefs -> prefs[SyncSettingsKeys.LAST_SYNC_TIME] ?: 0L }
+            .first()
+    }
 }
+

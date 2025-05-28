@@ -5,8 +5,11 @@ import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.dao.CardDao
 import com.canyoufix.data.entity.CardEntity
 import com.canyoufix.data.entity.QueueSyncEntity
+import com.canyoufix.data.mapping.DtoToEntity.toCardEntity
+import com.canyoufix.data.mapping.DtoToEntity.toPasswordEntity
 import com.canyoufix.settings.datastore.SyncSettingsStore
 import com.canyoufix.sync.dto.CardDto
+import com.canyoufix.sync.dto.PasswordDto
 import com.canyoufix.sync.retrofit.RetrofitClientProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -50,6 +53,11 @@ class CardRepository(
                 // Оставляем в очереди
             }
         }
+    }
+
+    suspend fun insertFromServer(cardDto: CardDto) {
+        val entity = cardDto.toCardEntity()
+        cardDao.insert(entity)
     }
 
     suspend fun update(card: CardEntity) {

@@ -5,7 +5,11 @@ import com.canyoufix.data.entity.CardEntity
 import com.canyoufix.data.entity.NoteEntity
 import com.canyoufix.data.entity.PasswordEntity
 import com.canyoufix.data.entity.QueueSyncEntity
+import com.canyoufix.data.repository.CardRepository
+import com.canyoufix.data.repository.NoteRepository
+import com.canyoufix.data.repository.PasswordRepository
 import com.canyoufix.data.repository.QueueSyncRepository
+import com.canyoufix.settings.datastore.SyncSettingsStore
 import com.canyoufix.sync.dto.CardDto
 import com.canyoufix.sync.dto.NoteDto
 import com.canyoufix.sync.dto.PasswordDto
@@ -13,11 +17,13 @@ import com.canyoufix.sync.retrofit.RetrofitClient
 import com.canyoufix.sync.retrofit.RetrofitClientProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
-import retrofit2.HttpException
-import java.io.IOException
 
 class SyncManager(
+    private val passwordRepository: PasswordRepository,
+    private val cardRepository: CardRepository,
+    private val noteRepository: NoteRepository,
     private val queueSyncRepository: QueueSyncRepository,
+    private val syncSettingsStore: SyncSettingsStore,
     private val retrofitClientProvider: RetrofitClientProvider
 ) {
 
@@ -32,41 +38,75 @@ class SyncManager(
         }
     }
 
-    suspend fun sync() {
+    suspend fun startSync() {
         if (!isServerAvailable()) {
-            Log.w("SyncManager", "Server is not available, skipping sync")
+            Log.d("SyncManager", "Server is not available, skipping sync")
             return
         }
 
-        val items = queueSyncRepository.getAll().first() // Берём текущие данные один раз
-        for (item in items) {
-            try {
-                val retrofit = retrofitClientProvider.getClient()
+        val retrofit = retrofitClientProvider.getClient()
 
-                when (item.type) {
-                    "note" -> syncNote(item, retrofit)
-                    "card" -> syncCard(item, retrofit)
-                    "password" -> syncPassword(item, retrofit)
-                }
+        // Получаем время синхронизации ДО начала операций
+        val lastSyncTime = syncSettingsStore.getLastSyncTime()
+        Log.d("SyncManager", "Starting sync with lastSyncTime: $lastSyncTime")
 
-                queueSyncRepository.delete(item)
-            } catch (e: Exception) {
-                when {
-                    e is IOException -> {
-                        Log.w("SyncManager", "Network error, will retry later", e)
+        var sendSuccess = false
+        var pullSuccess = false
+
+        // 1. Отправка локальных изменений
+        try {
+            val items = queueSyncRepository.getAll().first()
+            for (item in items) {
+                try {
+                    when (item.type) {
+                        "note" -> syncNote(item, retrofit)
+                        "card" -> syncCard(item, retrofit)
+                        "password" -> syncPassword(item, retrofit)
                     }
-
-                    e is HttpException && e.code() == 400 -> {
-                        // handleConflict(item, e)
-                    }
-
-                    else -> {
-                        Log.e("SyncManager", "Sync error for item ${item.id}", e)
-                    }
+                    queueSyncRepository.delete(item)
+                } catch (e: Exception) {
+                    Log.e("SyncManager", "Ошибка при отправке item: ${item.id}", e)
+                    // оставляем в очереди
                 }
             }
+            sendSuccess = true
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Ошибка при отправке очереди", e)
+        }
+
+        // 2. Получение новых данных
+        try {
+            Log.d("SyncManager", "Pulling changes since: $lastSyncTime")
+
+            val newPasswords = retrofit.passwordApi.getPasswordsSince(lastSyncTime)
+            val newNotes = retrofit.noteApi.getNotesSince(lastSyncTime)
+            val newCards = retrofit.cardApi.getCardsSince(lastSyncTime)
+
+            for (dto in newPasswords) {
+                passwordRepository.insertFromServer(dto)
+            }
+            for (dto in newNotes) {
+                noteRepository.insertFromServer(dto)
+            }
+            for (dto in newCards) {
+                cardRepository.insertFromServer(dto)
+            }
+
+            pullSuccess = true
+        } catch (e: Exception) {
+            Log.e("SyncManager", "Ошибка при получении данных с сервера", e)
+        }
+
+        // 3. Сохраняем время только если всё успешно
+        val newSyncTime = System.currentTimeMillis()
+        if (sendSuccess && pullSuccess) {
+            syncSettingsStore.saveLastSyncTime(newSyncTime)
+            Log.d("SyncManager", "Синхронизация успешно завершена, новое время: $newSyncTime")
+        } else {
+            Log.d("SyncManager", "Синхронизация НЕ завершена, время не обновлено")
         }
     }
+
 
 
 

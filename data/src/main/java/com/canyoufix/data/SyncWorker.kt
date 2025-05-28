@@ -14,7 +14,7 @@ class SyncWorker(
 
     override suspend fun doWork(): Result {
         return try {
-            syncManager.sync()
+            syncManager.startSync()
             Result.success()
         } catch (e: Exception) {
             Result.retry()

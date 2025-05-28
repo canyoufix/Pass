@@ -33,7 +33,6 @@ class MyApp : Application() {
             )
         }
 
-        startSyncWorker()
 
         AutofillAuthBridge.initialize(object : AuthIntentCreator {
             override fun createAuthIntent(): IntentSender? {

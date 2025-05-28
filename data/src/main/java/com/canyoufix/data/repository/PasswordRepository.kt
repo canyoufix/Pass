@@ -6,6 +6,7 @@ import com.canyoufix.crypto.SessionAESKeyHolder
 import com.canyoufix.data.dao.PasswordDao
 import com.canyoufix.data.entity.PasswordEntity
 import com.canyoufix.data.entity.QueueSyncEntity
+import com.canyoufix.data.mapping.DtoToEntity.toPasswordEntity
 import com.canyoufix.settings.datastore.SyncSettingsStore
 import com.canyoufix.sync.dto.PasswordDto
 import com.canyoufix.sync.retrofit.RetrofitClientProvider
@@ -52,6 +53,12 @@ class PasswordRepository(
             }
         }
     }
+
+    suspend fun insertFromServer(passwordDto: PasswordDto) {
+        val entity = passwordDto.toPasswordEntity()
+        passwordDao.insert(entity)
+    }
+
 
     suspend fun update(password: PasswordEntity) {
         val timestamp = System.currentTimeMillis()
