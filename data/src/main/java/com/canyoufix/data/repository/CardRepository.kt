@@ -53,9 +53,11 @@ class CardRepository(
     }
 
     suspend fun update(card: CardEntity) {
-        val encryptedCard = encryptCard(card)
-
         val timestamp = System.currentTimeMillis()
+        val updatedCard = card.copy(lastModified = timestamp)
+
+        val encryptedCard = encryptCard(updatedCard)
+
         cardDao.update(
             id = encryptedCard.id,
             title = encryptedCard.title,
@@ -63,7 +65,7 @@ class CardRepository(
             expiryDate = encryptedCard.expiryDate,
             cvc = encryptedCard.cvc,
             holderName = encryptedCard.holderName,
-            timestamp = timestamp
+            timestamp = encryptedCard.lastModified
         )
 
         if (syncSettingsStore.isEnabled()) {
@@ -86,33 +88,41 @@ class CardRepository(
         }
     }
 
-    suspend fun delete(card: CardEntity) {
-        val encryptedCard = encryptCard(card)
 
+    suspend fun delete(card: CardEntity) {
         val timestamp = System.currentTimeMillis()
+        val updatedCard = card.copy(
+            lastModified = timestamp,
+            isDeleted = true
+        )
+
+        val encryptedCard = encryptCard(updatedCard)
+
         cardDao.delete(
             id = encryptedCard.id,
-            timestamp = timestamp
+            timestamp = encryptedCard.lastModified
         )
 
         if (syncSettingsStore.isEnabled()) {
             val queueEntity = QueueSyncEntity(
                 id = UUID.randomUUID().toString(),
                 type = "card",
-                action = "delete",
+                action = "update", // не delete!
                 payload = Json.encodeToString(encryptedCard)
             )
             queueSyncRepository.insert(queueEntity)
 
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                retrofit.cardApi.deleteCard(encryptedCard.id)
+                val dto = cardToDto(encryptedCard)
+                retrofit.cardApi.deleteCard(encryptedCard.id, dto)
                 queueSyncRepository.delete(queueEntity)
             } catch (_: Exception) {
                 // Оставляем в очереди
             }
         }
     }
+
 
 
     fun getById(id: String): Flow<CardEntity?> {
@@ -127,7 +137,9 @@ class CardRepository(
             number = card.number,
             expiryDate = card.expiryDate,
             cvc = card.cvc,
-            holderName = card.holderName
+            holderName = card.holderName,
+            lastModified = card.lastModified,
+            isDeleted = card.isDeleted
         )
     }
 

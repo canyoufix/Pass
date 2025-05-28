@@ -5,6 +5,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -19,6 +20,7 @@ interface PasswordApi {
     @PUT("passwords/{id}")
     suspend fun updatePassword(@Path("id") id: String, @Body dto: PasswordDto): Response<Unit>
 
-    @DELETE("passwords/{id}")
-    suspend fun deletePassword(@Path("id") id: String): Response<Unit>
+
+    @HTTP(method = "DELETE", path = "passwords/{id}", hasBody = true)
+    suspend fun deletePassword(@Path("id") id: String, @Body dto: PasswordDto): Response<Unit>
 }

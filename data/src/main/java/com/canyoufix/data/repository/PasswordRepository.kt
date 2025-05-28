@@ -54,16 +54,18 @@ class PasswordRepository(
     }
 
     suspend fun update(password: PasswordEntity) {
-        val encrypted = encryptPassword(password)
-
         val timestamp = System.currentTimeMillis()
+        val updatedPassword = password.copy(lastModified = timestamp)
+
+        val encrypted = encryptPassword(updatedPassword)
+
         passwordDao.update(
             id = encrypted.id,
             title = encrypted.title,
             url = encrypted.url,
             username = encrypted.username,
             password = encrypted.password,
-            timestamp = timestamp
+            timestamp = encrypted.lastModified
         )
 
         if (syncSettingsStore.isEnabled()) {
@@ -87,32 +89,39 @@ class PasswordRepository(
     }
 
     suspend fun delete(password: PasswordEntity) {
-        val encrypted = encryptPassword(password)
-
         val timestamp = System.currentTimeMillis()
+        val updatedPassword = password.copy(
+            lastModified = timestamp,
+            isDeleted = true
+        )
+
+        val encrypted = encryptPassword(updatedPassword)
+
         passwordDao.delete(
             id = encrypted.id,
-            timestamp = timestamp
+            timestamp = encrypted.lastModified
         )
 
         if (syncSettingsStore.isEnabled()) {
             val queueEntity = QueueSyncEntity(
                 id = UUID.randomUUID().toString(),
                 type = "password",
-                action = "delete",
+                action = "update", // мягкое удаление!
                 payload = Json.encodeToString(encrypted)
             )
             queueSyncRepository.insert(queueEntity)
 
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                retrofit.passwordApi.deletePassword(encrypted.id)
+                val dto = passwordToDto(encrypted)
+                retrofit.passwordApi.deletePassword(encrypted.id, dto)
                 queueSyncRepository.delete(queueEntity)
             } catch (_: Exception) {
                 // Оставляем в очереди
             }
         }
     }
+
 
 
     fun getById(id: String): Flow<PasswordEntity?> {
@@ -143,7 +152,9 @@ class PasswordRepository(
             title = password.title,
             url = password.url,
             username = password.username,
-            password = password.password
+            password = password.password,
+            lastModified = password.lastModified,
+            isDeleted = password.isDeleted
         )
     }
 

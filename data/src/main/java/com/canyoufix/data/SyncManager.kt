@@ -72,12 +72,18 @@ class SyncManager(
 
     private suspend fun syncNote(item: QueueSyncEntity, retrofit: RetrofitClient) {
         val note = Json.decodeFromString<NoteEntity>(item.payload)
-        val dto = NoteDto(note.id, note.title, note.content)
+        val dto = NoteDto(
+            id = note.id,
+            title = note.title,
+            content = note.content,
+            lastModified = note.lastModified,
+            isDeleted = note.isDeleted
+        )
 
         when (item.action) {
             "insert" -> retrofit.noteApi.uploadNote(dto)
             "update" -> retrofit.noteApi.updateNote(note.id, dto)
-            "delete" -> retrofit.noteApi.deleteNote(note.id)
+            "delete" -> retrofit.noteApi.deleteNote(note.id, dto)
         }
     }
 
@@ -89,13 +95,15 @@ class SyncManager(
             number = card.number,
             expiryDate = card.expiryDate,
             cvc = card.cvc,
-            holderName = card.holderName
+            holderName = card.holderName,
+            lastModified = card.lastModified,
+            isDeleted = card.isDeleted
         )
 
         when (item.action) {
             "insert" -> retrofit.cardApi.uploadCard(dto)
             "update" -> retrofit.cardApi.updateCard(card.id, dto)
-            "delete" -> retrofit.cardApi.deleteCard(card.id)
+            "delete" -> retrofit.cardApi.deleteCard(card.id, dto)
         }
     }
 
@@ -106,13 +114,15 @@ class SyncManager(
             title = password.title,
             url = password.url,
             username = password.username,
-            password = password.password
+            password = password.password,
+            lastModified = password.lastModified,
+            isDeleted = password.isDeleted
         )
 
         when (item.action) {
             "insert" -> retrofit.passwordApi.uploadPassword(dto)
             "update" -> retrofit.passwordApi.updatePassword(password.id, dto)
-            "delete" -> retrofit.passwordApi.deletePassword(password.id)
+            "delete" -> retrofit.passwordApi.deletePassword(password.id, dto)
         }
     }
 }

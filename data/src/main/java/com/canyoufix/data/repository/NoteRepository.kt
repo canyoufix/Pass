@@ -55,14 +55,16 @@ class NoteRepository(
     }
 
     suspend fun update(note: NoteEntity) {
-        val encryptedNote = encryptNote(note)
-
         val timestamp = System.currentTimeMillis()
+        val updatedNote = note.copy(lastModified = timestamp)
+
+        val encryptedNote = encryptNote(updatedNote)
+
         noteDao.update(
             id = encryptedNote.id,
             title = encryptedNote.title,
             content = encryptedNote.content,
-            timestamp = timestamp
+            timestamp = encryptedNote.lastModified
         )
 
         if (syncSettingsStore.isEnabled()) {
@@ -78,8 +80,6 @@ class NoteRepository(
                 val retrofit = retrofitClientProvider.getClient()
                 val dto = noteToDto(encryptedNote)
                 retrofit.noteApi.updateNote(encryptedNote.id, dto)
-
-                // Удаляем из очереди, если успешно отправлено
                 queueSyncRepository.delete(queueEntity)
             } catch (_: Exception) {
                 // Оставляем в очереди
@@ -88,34 +88,39 @@ class NoteRepository(
     }
 
     suspend fun delete(note: NoteEntity) {
-        val encryptedNote = encryptNote(note)
-
         val timestamp = System.currentTimeMillis()
+        val updatedNote = note.copy(
+            lastModified = timestamp,
+            isDeleted = true
+        )
+
+        val encryptedNote = encryptNote(updatedNote)
+
         noteDao.delete(
             id = encryptedNote.id,
-            timestamp = timestamp
+            timestamp = encryptedNote.lastModified
         )
 
         if (syncSettingsStore.isEnabled()) {
             val queueEntity = QueueSyncEntity(
                 id = UUID.randomUUID().toString(),
                 type = "note",
-                action = "delete",
+                action = "update", // мягкое удаление!
                 payload = Json.encodeToString(encryptedNote)
             )
             queueSyncRepository.insert(queueEntity)
 
             try {
                 val retrofit = retrofitClientProvider.getClient()
-                retrofit.noteApi.deleteNote(encryptedNote.id)
-
-                // Удаляем из очереди, если успешно отправлено
+                val dto = noteToDto(encryptedNote)
+                retrofit.noteApi.deleteNote(encryptedNote.id, dto)
                 queueSyncRepository.delete(queueEntity)
             } catch (_: Exception) {
                 // Оставляем в очереди
             }
         }
     }
+
 
 
     fun getById(id: String): Flow<NoteEntity?> {
@@ -127,7 +132,9 @@ class NoteRepository(
         return NoteDto(
             id = note.id,
             title = note.title,
-            content = note.content
+            content = note.content,
+            lastModified = note.lastModified,
+            isDeleted = note.isDeleted
         )
     }
 
