@@ -1,6 +1,5 @@
 package com.canyoufix.ui.navigation
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
@@ -12,6 +11,7 @@ import androidx.compose.ui.Modifier
 import com.canyoufix.data.viewmodel.CardViewModel
 import com.canyoufix.data.viewmodel.NoteViewModel
 import com.canyoufix.data.viewmodel.PasswordViewModel
+import com.canyoufix.sync.retrofit.RetrofitClientProvider
 import com.canyoufix.ui.screens.menu.GeneratorScreen
 import com.canyoufix.ui.screens.menu.SettingsScreen
 import com.canyoufix.ui.screens.menu.StorageScreen
@@ -26,6 +26,7 @@ import com.canyoufix.ui.screens.storage.detail.CardDetailScreen
 import com.canyoufix.ui.screens.storage.detail.NoteDetailScreen
 import com.canyoufix.ui.screens.storage.detail.PasswordDetailScreen
 import org.koin.androidx.compose.koinViewModel
+import org.koin.java.KoinJavaComponent.getKoin
 
 
 @Composable
@@ -34,6 +35,8 @@ fun AppNavigation(navController: NavHostController, padding: PaddingValues) {
     val passwordViewModel: PasswordViewModel = koinViewModel()
     val cardViewModel: CardViewModel = koinViewModel()
     val noteViewModel: NoteViewModel = koinViewModel()
+
+    val retrofitClientProvider: RetrofitClientProvider = remember { getKoin().get() }
 
     NavHost(
         navController = navController,
@@ -114,7 +117,7 @@ fun AppNavigation(navController: NavHostController, padding: PaddingValues) {
             SecuritySettingsScreen(navController = navController)
         }
         composable("sync_settings") {
-            SyncSettingsScreen(navController = navController)
+            SyncSettingsScreen(navController = navController, retrofitClientProvider = retrofitClientProvider)
         }
         composable("storage_settings") {
             StorageSettingsScreen(navController = navController)

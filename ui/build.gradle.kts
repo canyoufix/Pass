@@ -42,6 +42,7 @@ dependencies {
     implementation(project(":crypto"))
     implementation(libs.androidx.espresso.core)
     implementation(project(":settings"))
+    implementation(project(":sync"))
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
     implementation(libs.ui) // Для UI компонентов Compose

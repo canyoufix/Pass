@@ -28,6 +28,9 @@ class SyncManager(
 ) {
 
     suspend fun isServerAvailable(): Boolean {
+        if (!syncSettingsStore.isEnabled())
+            return false
+
         return try {
             val response = retrofitClientProvider.getClient().pingApi.ping()
             Log.d("SyncManager", "Ping status code: ${response.code()}")
