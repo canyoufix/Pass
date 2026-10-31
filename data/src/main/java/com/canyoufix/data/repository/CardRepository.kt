@@ -1,196 +1,117 @@
 package com.canyoufix.data.repository
 
-import com.canyoufix.crypto.CryptoManager
-import com.canyoufix.crypto.SessionAESKeyHolder
-import com.canyoufix.data.dao.CardDao
-import com.canyoufix.data.entity.CardEntity
+import androidx.room.withTransaction
+import com.canyoufix.data.database.AppDatabase
 import com.canyoufix.data.entity.QueueSyncEntity
-import com.canyoufix.data.mapping.DtoToEntity.toCardEntity
-import com.canyoufix.data.mapping.DtoToEntity.toPasswordEntity
-import com.canyoufix.settings.datastore.SyncSettingsStore
-import com.canyoufix.sync.dto.CardDto
-import com.canyoufix.sync.dto.PasswordDto
-import com.canyoufix.sync.retrofit.RetrofitClientProvider
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.Json
+import com.canyoufix.data.mapping.EntryCodec
+import com.canyoufix.data.mapping.toDomain
+import com.canyoufix.data.mapping.toEntity
+import com.canyoufix.data.serialization.storageJson
+import com.canyoufix.data.sync.nextLocalTimestamp
+import com.canyoufix.domain.CoroutineDispatchers
+import com.canyoufix.domain.model.CardEntry
+import com.canyoufix.domain.repository.CardRepository as Contract
+import com.canyoufix.domain.repository.SessionRepository
+import com.canyoufix.domain.repository.SessionState
+import java.time.Clock
 import java.util.UUID
-import javax.crypto.SecretKey
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class CardRepository(
-    private val cardDao: CardDao,
-    private val retrofitClientProvider: RetrofitClientProvider,
-    private val syncSettingsStore: SyncSettingsStore,
-    private val queueSyncRepository: QueueSyncRepository
-) {
-    private val cryptoManager = CryptoManager
+    private val database: AppDatabase,
+    private val codec: EntryCodec,
+    private val session: SessionRepository,
+    private val dispatchers: CoroutineDispatchers,
+    private val clock: Clock,
+) : Contract {
+    private val dao = database.cardDao()
 
-    val getAllCards: Flow<List<CardEntity>> = cardDao.getAll()
-        .map { cards -> decryptCards(cards) }
+    override fun observeAll(): Flow<List<CardEntry>> =
+        session.state
+            .flatMapLatest { state ->
+                if (state == SessionState.Unlocked && codec.canRead) {
+                    dao.getAll().map { entries ->
+                        val cipher = codec.capture()
+                        entries.map { it.toDomain(cipher::decode) }.also { cipher.requireActive() }
+                    }
+                } else flowOf(emptyList())
+            }
+            .distinctUntilChanged()
+            .flowOn(dispatchers.computation)
 
-    val getAllEncryptedCards: Flow<List<CardEntity>> = cardDao.getAll()
+    override fun observeById(id: String): Flow<CardEntry?> =
+        session.state
+            .flatMapLatest { state ->
+                if (state == SessionState.Unlocked && codec.canRead) {
+                    dao.getById(id).map {
+                        it?.let { stored ->
+                            val cipher = codec.capture()
+                            stored.toDomain(cipher::decode).also { cipher.requireActive() }
+                        }
+                    }
+                } else flowOf(null)
+            }
+            .flowOn(dispatchers.computation)
 
-    suspend fun insert(card: CardEntity) {
-        val encryptedCard = encryptCard(card)
-        cardDao.insert(encryptedCard)
-
-        if (syncSettingsStore.isEnabled()) {
-            val queueEntity = QueueSyncEntity(
-                id = UUID.randomUUID().toString(),
-                type = "card",
-                action = "insert",
-                payload = Json.encodeToString(encryptedCard)
-            )
-            queueSyncRepository.insert(queueEntity)
-
-            try {
-                val retrofit = retrofitClientProvider.getClient()
-                val dto = cardToDto(encryptedCard)
-                retrofit.cardApi.uploadCard(dto)
-                queueSyncRepository.delete(queueEntity)
-            } catch (_: Exception) {
-                // Оставляем в очереди
+    override suspend fun save(entry: CardEntry) =
+        withContext(dispatchers.io) {
+            val cipher = codec.capture()
+            val encrypted = entry.copy(lastModified = clock.millis()).toEntity(cipher::encode)
+            database.withTransaction {
+                cipher.requireActive()
+                val existing = dao.getStoredById(entry.id)
+                if (existing != null)
+                    requireUnchangedRevision(
+                        entry.lastModified,
+                        existing.lastModified,
+                        existing.isDeleted,
+                    )
+                val action = if (existing == null) "insert" else "update"
+                val saved =
+                    encrypted.copy(
+                        lastModified = nextLocalTimestamp(clock.millis(), existing?.lastModified),
+                    )
+                dao.insert(saved)
+                database
+                    .queueSyncDao()
+                    .insert(
+                        QueueSyncEntity(
+                            UUID.randomUUID().toString(),
+                            "card",
+                            action,
+                            storageJson.encodeToString(saved),
+                        ),
+                    )
             }
         }
-    }
 
-    suspend fun insertFromServer(cardDto: CardDto) {
-        val entity = cardDto.toCardEntity()
-        cardDao.insert(entity)
-    }
-
-    suspend fun update(card: CardEntity) {
-        val timestamp = System.currentTimeMillis()
-        val updatedCard = card.copy(lastModified = timestamp)
-
-        val encryptedCard = encryptCard(updatedCard)
-
-        cardDao.update(
-            id = encryptedCard.id,
-            title = encryptedCard.title,
-            number = encryptedCard.number,
-            expiryDate = encryptedCard.expiryDate,
-            cvc = encryptedCard.cvc,
-            holderName = encryptedCard.holderName,
-            timestamp = encryptedCard.lastModified
-        )
-
-        if (syncSettingsStore.isEnabled()) {
-            val queueEntity = QueueSyncEntity(
-                id = UUID.randomUUID().toString(),
-                type = "card",
-                action = "update",
-                payload = Json.encodeToString(encryptedCard)
-            )
-            queueSyncRepository.insert(queueEntity)
-
-            try {
-                val retrofit = retrofitClientProvider.getClient()
-                val dto = cardToDto(encryptedCard)
-                retrofit.cardApi.updateCard(encryptedCard.id, dto)
-                queueSyncRepository.delete(queueEntity)
-            } catch (_: Exception) {
-                // Оставляем в очереди
+    override suspend fun delete(entry: CardEntry) =
+        withContext(dispatchers.io) {
+            val cipher = codec.capture()
+            database.withTransaction {
+                cipher.requireActive()
+                val stored = dao.getStoredById(entry.id) ?: return@withTransaction
+                if (stored.isDeleted) return@withTransaction
+                requireUnchangedRevision(entry.lastModified, stored.lastModified, stored.isDeleted)
+                val deleted =
+                    stored.copy(
+                        isDeleted = true,
+                        lastModified = nextLocalTimestamp(clock.millis(), stored.lastModified),
+                    )
+                dao.insert(deleted)
+                database
+                    .queueSyncDao()
+                    .insert(
+                        QueueSyncEntity(
+                            UUID.randomUUID().toString(),
+                            "card",
+                            "delete",
+                            storageJson.encodeToString(deleted),
+                        ),
+                    )
             }
         }
-    }
-
-
-    suspend fun delete(card: CardEntity) {
-        val timestamp = System.currentTimeMillis()
-        val updatedCard = card.copy(
-            lastModified = timestamp,
-            isDeleted = true
-        )
-
-        val encryptedCard = encryptCard(updatedCard)
-
-        cardDao.delete(
-            id = encryptedCard.id,
-            timestamp = encryptedCard.lastModified
-        )
-
-        if (syncSettingsStore.isEnabled()) {
-            val queueEntity = QueueSyncEntity(
-                id = UUID.randomUUID().toString(),
-                type = "card",
-                action = "update", // не delete!
-                payload = Json.encodeToString(encryptedCard)
-            )
-            queueSyncRepository.insert(queueEntity)
-
-            try {
-                val retrofit = retrofitClientProvider.getClient()
-                val dto = cardToDto(encryptedCard)
-                retrofit.cardApi.deleteCard(encryptedCard.id, dto)
-                queueSyncRepository.delete(queueEntity)
-            } catch (_: Exception) {
-                // Оставляем в очереди
-            }
-        }
-    }
-
-
-
-    fun getById(id: String): Flow<CardEntity?> {
-        return cardDao.getById(id)
-            .map { it?.let { decryptCard(it) } }
-    }
-
-    private fun cardToDto(card: CardEntity): CardDto {
-        return CardDto(
-            id = card.id,
-            title = card.title,
-            number = card.number,
-            expiryDate = card.expiryDate,
-            cvc = card.cvc,
-            holderName = card.holderName,
-            lastModified = card.lastModified,
-            isDeleted = card.isDeleted
-        )
-    }
-
-    // Шифрование
-    private fun encryptCard(card: CardEntity): CardEntity {
-        val key = SessionAESKeyHolder.key
-        return encryptCard(card, key)
-    }
-
-    private fun encryptCard(card: CardEntity, key: SecretKey): CardEntity {
-        return card.copy(
-            title = cryptoManager.encrypt(card.title, key),
-            number = cryptoManager.encrypt(card.number, key),
-            expiryDate = cryptoManager.encrypt(card.expiryDate, key),
-            cvc = cryptoManager.encrypt(card.cvc, key),
-            holderName = cryptoManager.encrypt(card.holderName, key)
-        )
-    }
-
-    // Дешифрование
-    private fun decryptCard(card: CardEntity): CardEntity {
-        val key = SessionAESKeyHolder.key
-        return decryptCard(card, key)
-    }
-
-    fun decryptCard(card: CardEntity, key: SecretKey): CardEntity {
-        return card.copy(
-            title = cryptoManager.decrypt(card.title, key) ?: "DECRYPTION_ERROR",
-            number = cryptoManager.decrypt(card.number, key) ?: "",
-            expiryDate = cryptoManager.decrypt(card.expiryDate, key) ?: "",
-            cvc = cryptoManager.decrypt(card.cvc, key) ?: "",
-            holderName = cryptoManager.decrypt(card.holderName, key) ?: ""
-        )
-    }
-
-    private fun decryptCards(cards: List<CardEntity>): List<CardEntity> {
-        val key = SessionAESKeyHolder.key
-        return decryptCards(cards, key)
-    }
-
-    private fun decryptCards(cards: List<CardEntity>, key: SecretKey): List<CardEntity> {
-        return cards.map { decryptCard(it, key) }
-    }
 }
-
-

@@ -24,7 +24,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -35,29 +35,26 @@ android {
 }
 
 dependencies {
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(project(":domain"))
     implementation(project(":crypto"))
     implementation(project(":settings"))
     implementation(project(":sync"))
-    
+
     // Room
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.lifecycle.viewmodel.android)
     implementation(libs.androidx.work.runtime.ktx)
 
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
     // Koin
-    implementation(project.dependencies.platform(libs.koin.bom))
-    implementation(libs.koin.core)
-    implementation(libs.koin.android)
 
     // JSON
     implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -68,3 +65,5 @@ kotlin {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
+
+ksp { arg("room.schemaLocation", "$projectDir/schemas") }

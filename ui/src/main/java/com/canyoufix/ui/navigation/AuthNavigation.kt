@@ -1,62 +1,94 @@
 package com.canyoufix.ui.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.compose.runtime.remember
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.compose.rememberNavController
-import com.canyoufix.crypto.SecurePrefsManager
-import com.canyoufix.ui.screens.MainScreen
-import com.canyoufix.ui.screens.auth.AuthScreen
-import com.canyoufix.ui.screens.auth.SetupScreen
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.core.view.WindowCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.canyoufix.domain.repository.*
+import com.canyoufix.ui.R
+import com.canyoufix.ui.components.*
+import com.canyoufix.ui.presentation.AuthViewModel
+import com.canyoufix.ui.screens.AuthScreen
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun AuthNavigation() {
-    val navController = rememberNavController()
+fun AuthNavigation(
+    viewModel: AuthViewModel = koinViewModel(),
+    onAuthenticated: (() -> Unit)? = null,
+) {
+    val session by viewModel.sessionState.collectAsStateWithLifecycle()
+    LaunchedEffect(session) { if (session == SessionState.Unlocked) onAuthenticated?.invoke() }
+    val initializationFailed by viewModel.initializationFailed.collectAsStateWithLifecycle()
+    val form by viewModel.form.collectAsStateWithLifecycle()
+    val status by viewModel.status.collectAsStateWithLifecycle()
+    val theme by viewModel.theme.collectAsStateWithLifecycle()
+    val dark =
+        when (theme) {
+            AppTheme.SYSTEM -> isSystemInDarkTheme()
+            AppTheme.LIGHT -> false
+            AppTheme.DARK -> true
+        }
     val context = LocalContext.current
-    val prefsManager = remember { SecurePrefsManager(context) }
-
-    // Проверяем, установлен ли мастер-пароль
-    val startDestination = remember {
-        if (prefsManager.getSalt() == null) "setup" else "auth"
-    }
-
-    NavHost(
-        navController = navController,
-        startDestination = startDestination
-    ) {
-        // Авторизационный поток
-        composable("setup") {
-            SetupScreen {
-                navController.navigate("main") {
-                    // Очищаем весь стек до setup включительно
-                    popUpTo("setup") { inclusive = true }
-                }
+    val view = LocalView.current
+    SideEffect {
+        context.findActivity()?.window?.let { window ->
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !dark
+                isAppearanceLightNavigationBars = !dark
             }
         }
-
-        composable("auth") {
-            AuthScreen(
-                onSuccess = {
-                    navController.navigate("main") {
-                        // Очищаем весь стек до auth включительно
-                        popUpTo("auth") { inclusive = true }
+    }
+    MaterialTheme(colorScheme = glassColors(dark), shapes = GlassShapes) {
+        GlassBackdrop {
+            when (session) {
+                SessionState.Loading ->
+                    ScreenFrame("TwicePass", status, viewModel::dismissMessage) { padding ->
+                        Box(
+                            Modifier.fillMaxSize().padding(padding),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            if (!initializationFailed) CircularProgressIndicator()
+                            else
+                                Button(onClick = viewModel::initialize) {
+                                    Text(stringResource(R.string.action_retry))
+                                }
+                        }
                     }
-                },
-                onFail = { error -> /* обработка ошибки */ },
-                onResetComplete = {
-                    navController.navigate("setup") {
-                        // Очищаем стек до auth перед переходом на setup
-                        popUpTo("auth") { inclusive = true }
-                    }
-                }
-            )
-        }
-
-        // Основной поток приложения
-        composable("main") {
-            MainScreen()
+                SessionState.SetupRequired,
+                SessionState.Locked ->
+                    AuthScreen(
+                        setup = session == SessionState.SetupRequired,
+                        form = form,
+                        status = status,
+                        onEdit = viewModel::edit,
+                        onSubmit = viewModel::submit,
+                        onReset = viewModel::reset,
+                        onDismissMessage = viewModel::dismissMessage,
+                    )
+                SessionState.Unlocked ->
+                    if (onAuthenticated == null) MainNavigation(onLock = viewModel::lock)
+                    else
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+            }
         }
     }
 }
+
+private tailrec fun Context.findActivity(): Activity? =
+    when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }

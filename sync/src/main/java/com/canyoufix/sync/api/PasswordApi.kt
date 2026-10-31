@@ -2,29 +2,15 @@ package com.canyoufix.sync.api
 
 import com.canyoufix.sync.dto.PasswordDto
 import retrofit2.Response
-import retrofit2.http.Body
-import retrofit2.http.GET
-import retrofit2.http.HTTP
-import retrofit2.http.POST
-import retrofit2.http.PUT
-import retrofit2.http.Path
-import retrofit2.http.Query
+import retrofit2.http.*
 
 interface PasswordApi {
-    @GET("passwords")
-    suspend fun getAllPasswords(): List<PasswordDto>
+    @GET("passwords") suspend fun getAllPasswords(): List<PasswordDto>
 
-    @POST("passwords")
-    suspend fun uploadPassword(@Body dto: PasswordDto): Response<Unit>
+    @GET("passwords/{id}") suspend fun getById(@Path("id") id: String): Response<PasswordDto>
+
+    @POST("passwords") suspend fun uploadPassword(@Body dto: PasswordDto): Response<Unit>
 
     @PUT("passwords/{id}")
     suspend fun updatePassword(@Path("id") id: String, @Body dto: PasswordDto): Response<Unit>
-
-
-    @HTTP(method = "DELETE", path = "passwords/{id}", hasBody = true)
-    suspend fun deletePassword(@Path("id") id: String, @Body dto: PasswordDto): Response<Unit>
-
-    @GET("passwords/sync")
-    suspend fun getPasswordsSince(@Query("since") lastSync: Long): List<PasswordDto>
-
 }

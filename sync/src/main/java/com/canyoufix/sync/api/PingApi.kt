@@ -4,6 +4,5 @@ import retrofit2.Response
 import retrofit2.http.GET
 
 interface PingApi {
-    @GET("ping")
-    suspend fun ping(): Response<Unit>
+    @GET("ping") suspend fun ping(): Response<Unit>
 }

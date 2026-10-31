@@ -7,5 +7,5 @@ data class MetaInfo(
     val version: String,
     val exportedAt: String,
     val device: String,
-    val androidVersion: String
+    val androidVersion: String,
 )

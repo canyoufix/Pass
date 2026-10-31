@@ -1,201 +1,123 @@
 package com.canyoufix.data.repository
 
-import android.net.Uri
-import com.canyoufix.crypto.CryptoManager
-import com.canyoufix.crypto.SessionAESKeyHolder
-import com.canyoufix.data.dao.PasswordDao
-import com.canyoufix.data.entity.PasswordEntity
+import androidx.room.withTransaction
+import com.canyoufix.data.database.AppDatabase
 import com.canyoufix.data.entity.QueueSyncEntity
-import com.canyoufix.data.mapping.DtoToEntity.toPasswordEntity
-import com.canyoufix.settings.datastore.SyncSettingsStore
-import com.canyoufix.sync.dto.PasswordDto
-import com.canyoufix.sync.retrofit.RetrofitClientProvider
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.Json
+import com.canyoufix.data.mapping.EntryCodec
+import com.canyoufix.data.mapping.toDomain
+import com.canyoufix.data.mapping.toEntity
+import com.canyoufix.data.serialization.storageJson
+import com.canyoufix.data.sync.nextLocalTimestamp
+import com.canyoufix.domain.CoroutineDispatchers
+import com.canyoufix.domain.model.PasswordEntry
+import com.canyoufix.domain.model.websiteDomain
+import com.canyoufix.domain.repository.PasswordRepository as Contract
+import com.canyoufix.domain.repository.SessionRepository
+import com.canyoufix.domain.repository.SessionState
+import java.time.Clock
 import java.util.UUID
-import javax.crypto.SecretKey
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class PasswordRepository(
-    private val passwordDao: PasswordDao,
-    private val retrofitClientProvider: RetrofitClientProvider,
-    private val syncSettingsStore: SyncSettingsStore,
-    private val queueSyncRepository: QueueSyncRepository
-) {
-    private val cryptoManager = CryptoManager
+    private val database: AppDatabase,
+    private val codec: EntryCodec,
+    private val session: SessionRepository,
+    private val dispatchers: CoroutineDispatchers,
+    private val clock: Clock,
+) : Contract {
+    private val dao = database.passwordDao()
 
-    val getAllPasswords: Flow<List<PasswordEntity>> = passwordDao.getAll()
-        .map { decryptPasswords(it) }
+    override fun observeAll(): Flow<List<PasswordEntry>> =
+        session.state
+            .flatMapLatest { state ->
+                if (state == SessionState.Unlocked && codec.canRead) {
+                    dao.getAll().map { entries ->
+                        val cipher = codec.capture()
+                        entries.map { it.toDomain(cipher::decode) }.also { cipher.requireActive() }
+                    }
+                } else flowOf(emptyList())
+            }
+            .distinctUntilChanged()
+            .flowOn(dispatchers.computation)
 
-    val getAllEncryptedPasswords: Flow<List<PasswordEntity>> = passwordDao.getAll()
+    override fun observeById(id: String): Flow<PasswordEntry?> =
+        session.state
+            .flatMapLatest { state ->
+                if (state == SessionState.Unlocked && codec.canRead) {
+                    dao.getById(id).map {
+                        it?.let { stored ->
+                            val cipher = codec.capture()
+                            stored.toDomain(cipher::decode).also { cipher.requireActive() }
+                        }
+                    }
+                } else flowOf(null)
+            }
+            .flowOn(dispatchers.computation)
 
-    suspend fun insert(password: PasswordEntity) {
-        val encrypted = encryptPassword(password)
-        passwordDao.insert(encrypted)
-
-        if (syncSettingsStore.isEnabled()) {
-            val queueEntity = QueueSyncEntity(
-                id = UUID.randomUUID().toString(),
-                type = "password",
-                action = "insert",
-                payload = Json.encodeToString(encrypted)
-            )
-            queueSyncRepository.insert(queueEntity)
-
-            try {
-                val retrofit = retrofitClientProvider.getClient()
-                val dto = passwordToDto(encrypted)
-                retrofit.passwordApi.uploadPassword(dto)
-                queueSyncRepository.delete(queueEntity)
-            } catch (_: Exception) {
-                // Оставляем в очереди
+    override suspend fun save(entry: PasswordEntry) =
+        withContext(dispatchers.io) {
+            val cipher = codec.capture()
+            val encrypted = entry.copy(lastModified = clock.millis()).toEntity(cipher::encode)
+            database.withTransaction {
+                cipher.requireActive()
+                val existing = dao.getStoredById(entry.id)
+                if (existing != null)
+                    requireUnchangedRevision(
+                        entry.lastModified,
+                        existing.lastModified,
+                        existing.isDeleted,
+                    )
+                val action = if (existing == null) "insert" else "update"
+                val saved =
+                    encrypted.copy(
+                        lastModified = nextLocalTimestamp(clock.millis(), existing?.lastModified),
+                    )
+                dao.insert(saved)
+                database
+                    .queueSyncDao()
+                    .insert(
+                        QueueSyncEntity(
+                            UUID.randomUUID().toString(),
+                            "password",
+                            action,
+                            storageJson.encodeToString(saved),
+                        ),
+                    )
             }
         }
-    }
 
-    suspend fun insertFromServer(passwordDto: PasswordDto) {
-        val entity = passwordDto.toPasswordEntity()
-        passwordDao.insert(entity)
-    }
-
-
-    suspend fun update(password: PasswordEntity) {
-        val timestamp = System.currentTimeMillis()
-        val updatedPassword = password.copy(lastModified = timestamp)
-
-        val encrypted = encryptPassword(updatedPassword)
-
-        passwordDao.update(
-            id = encrypted.id,
-            title = encrypted.title,
-            url = encrypted.url,
-            username = encrypted.username,
-            password = encrypted.password,
-            timestamp = encrypted.lastModified
-        )
-
-        if (syncSettingsStore.isEnabled()) {
-            val queueEntity = QueueSyncEntity(
-                id = UUID.randomUUID().toString(),
-                type = "password",
-                action = "update",
-                payload = Json.encodeToString(encrypted)
-            )
-            queueSyncRepository.insert(queueEntity)
-
-            try {
-                val retrofit = retrofitClientProvider.getClient()
-                val dto = passwordToDto(encrypted)
-                retrofit.passwordApi.updatePassword(encrypted.id, dto)
-                queueSyncRepository.delete(queueEntity)
-            } catch (_: Exception) {
-                // Оставляем в очереди
+    override suspend fun delete(entry: PasswordEntry) =
+        withContext(dispatchers.io) {
+            val cipher = codec.capture()
+            database.withTransaction {
+                cipher.requireActive()
+                val stored = dao.getStoredById(entry.id) ?: return@withTransaction
+                if (stored.isDeleted) return@withTransaction
+                requireUnchangedRevision(entry.lastModified, stored.lastModified, stored.isDeleted)
+                val deleted =
+                    stored.copy(
+                        isDeleted = true,
+                        lastModified = nextLocalTimestamp(clock.millis(), stored.lastModified),
+                    )
+                dao.insert(deleted)
+                database
+                    .queueSyncDao()
+                    .insert(
+                        QueueSyncEntity(
+                            UUID.randomUUID().toString(),
+                            "password",
+                            "delete",
+                            storageJson.encodeToString(deleted),
+                        ),
+                    )
             }
         }
-    }
 
-    suspend fun delete(password: PasswordEntity) {
-        val timestamp = System.currentTimeMillis()
-        val updatedPassword = password.copy(
-            lastModified = timestamp,
-            isDeleted = true
-        )
-
-        val encrypted = encryptPassword(updatedPassword)
-
-        passwordDao.delete(
-            id = encrypted.id,
-            timestamp = encrypted.lastModified
-        )
-
-        if (syncSettingsStore.isEnabled()) {
-            val queueEntity = QueueSyncEntity(
-                id = UUID.randomUUID().toString(),
-                type = "password",
-                action = "update", // мягкое удаление!
-                payload = Json.encodeToString(encrypted)
-            )
-            queueSyncRepository.insert(queueEntity)
-
-            try {
-                val retrofit = retrofitClientProvider.getClient()
-                val dto = passwordToDto(encrypted)
-                retrofit.passwordApi.deletePassword(encrypted.id, dto)
-                queueSyncRepository.delete(queueEntity)
-            } catch (_: Exception) {
-                // Оставляем в очереди
-            }
-        }
-    }
-
-
-
-    fun getById(id: String): Flow<PasswordEntity?> {
-        return passwordDao.getById(id)
-            .map { it?.let { decryptPassword(it) } }
-    }
-
-    suspend fun getAccountsByDomain(domain: String): List<PasswordEntity> {
-        val allPasswords = getAllPasswords.first()
-        return allPasswords.filter {
-            val siteDomain = extractDomain(it.url)
-            siteDomain.equals(domain, ignoreCase = true)
-        }
-    }
-
-    private fun extractDomain(url: String): String {
-        return try {
-            val uri = Uri.parse(url)
-            uri.host ?: ""
-        } catch (e: Exception) {
-            ""
-        }
-    }
-
-    private fun passwordToDto(password: PasswordEntity): PasswordDto {
-        return PasswordDto(
-            id = password.id,
-            title = password.title,
-            url = password.url,
-            username = password.username,
-            password = password.password,
-            lastModified = password.lastModified,
-            isDeleted = password.isDeleted
-        )
-    }
-
-    private fun encryptPassword(password: PasswordEntity): PasswordEntity {
-        val key = SessionAESKeyHolder.key
-        return encryptPassword(password, key)
-    }
-
-    private fun encryptPassword(password: PasswordEntity, key: SecretKey): PasswordEntity {
-        return password.copy(
-            title = cryptoManager.encrypt(password.title, key),
-            url = cryptoManager.encrypt(password.url, key),
-            username = cryptoManager.encrypt(password.username, key),
-            password = cryptoManager.encrypt(password.password, key)
-        )
-    }
-
-    private fun decryptPassword(password: PasswordEntity): PasswordEntity {
-        val key = SessionAESKeyHolder.key
-        return decryptPassword(password, key)
-    }
-
-    fun decryptPassword(password: PasswordEntity, key: SecretKey): PasswordEntity {
-        return password.copy(
-            title = cryptoManager.decrypt(password.title, key) ?: "DECRYPTION_ERROR",
-            url = cryptoManager.decrypt(password.url, key) ?: "",
-            username = cryptoManager.decrypt(password.username, key) ?: "",
-            password = cryptoManager.decrypt(password.password, key) ?: ""
-        )
-    }
-
-    private fun decryptPasswords(passwords: List<PasswordEntity>): List<PasswordEntity> {
-        val key = SessionAESKeyHolder.key
-        return passwords.map { decryptPassword(it, key) }
+    override suspend fun findByDomain(domain: String): List<PasswordEntry> {
+        val expected = websiteDomain(domain) ?: return emptyList()
+        return observeAll().first().filter { websiteDomain(it.url) == expected }
     }
 }
-

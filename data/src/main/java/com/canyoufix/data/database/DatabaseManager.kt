@@ -1,19 +1,20 @@
 package com.canyoufix.data.database
 
+import androidx.room.withTransaction
+import com.canyoufix.domain.CoroutineDispatchers
+import kotlinx.coroutines.withContext
+
 class DatabaseManager(
-    private val database: AppDatabase // Внедряем через Koin
+    private val database: AppDatabase,
+    private val dispatchers: CoroutineDispatchers,
 ) {
-    // Получаем доступ к базе данных через SupportSQLiteDatabase
-    private val databaseHelper = database.openHelper.writableDatabase
-
-    // Метод для очистки всех данных из базы
-    suspend fun clearAllData() {
-        database.passwordDao().clearAll() // Очистка таблицы паролей
-        database.cardDao().clearAll()     // Очистка таблицы карт
-        database.noteDao().clearAll()     // Очистка таблицы заметок
-        database.queueSyncDao().clearAll()
-
-        // Выполняем команду VACUUM для уменьшения размера базы данных
-        databaseHelper.execSQL("VACUUM")
-    }
+    suspend fun clearAllData() =
+        withContext(dispatchers.io) {
+            database.withTransaction {
+                database.passwordDao().clearAll()
+                database.cardDao().clearAll()
+                database.noteDao().clearAll()
+                database.queueSyncDao().clearAll()
+            }
+        }
 }

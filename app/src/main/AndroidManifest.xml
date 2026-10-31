@@ -19,6 +19,14 @@
 
         tools:targetApi="31">
 
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data android:name="androidx.work.WorkManagerInitializer" tools:node="remove" />
+        </provider>
+
         <service
             android:name="com.canyoufix.autofill.service.MyAutofillService"
             android:permission="android.permission.BIND_AUTOFILL_SERVICE"
@@ -32,6 +40,8 @@
                 android:name="android.autofill"
                 android:resource="@xml/autofill_service" />
         </service>
+
+        <activity android:name=".AutofillAuthActivity" android:exported="false" android:theme="@style/Theme.Pass" />
 
         <activity
             android:name=".MainActivity"

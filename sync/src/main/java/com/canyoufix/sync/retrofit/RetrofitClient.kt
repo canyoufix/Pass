@@ -1,33 +1,26 @@
 package com.canyoufix.sync.retrofit
 
-import com.canyoufix.sync.api.CardApi
-import com.canyoufix.sync.api.NoteApi
-import com.canyoufix.sync.api.PasswordApi
-import com.canyoufix.sync.api.PingApi
+import com.canyoufix.sync.api.*
+import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class RetrofitClient(private val ip: String, private val port: String) {
-    private val retrofit: Retrofit by lazy {
-        val baseUrl = "http://$ip:$port/"
-
+class RetrofitClient(ip: String, port: String) {
+    private val retrofit =
         Retrofit.Builder()
-            .baseUrl(baseUrl)
+            .baseUrl("http://" + ip + ":" + port + "/")
             .client(
                 OkHttpClient.Builder()
-                    .addInterceptor(HttpLoggingInterceptor().apply {
-                        level = HttpLoggingInterceptor.Level.BODY
-                    })
-                    .build()
+                    .connectTimeout(15, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .callTimeout(45, TimeUnit.SECONDS)
+                    .build(),
             )
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-    }
-
-    val passwordApi: PasswordApi by lazy { retrofit.create(PasswordApi::class.java) }
-    val noteApi: NoteApi by lazy { retrofit.create(NoteApi::class.java) }
-    val cardApi: CardApi by lazy { retrofit.create(CardApi::class.java) }
-    val pingApi: PingApi by lazy { retrofit.create(PingApi::class.java) }
+    val passwordApi: PasswordApi = retrofit.create(PasswordApi::class.java)
+    val noteApi: NoteApi = retrofit.create(NoteApi::class.java)
+    val cardApi: CardApi = retrofit.create(CardApi::class.java)
+    val pingApi: PingApi = retrofit.create(PingApi::class.java)
 }

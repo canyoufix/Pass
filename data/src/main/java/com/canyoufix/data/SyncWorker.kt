@@ -3,21 +3,18 @@ package com.canyoufix.data
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import org.koin.java.KoinJavaComponent.getKoin
+import com.canyoufix.domain.repository.SyncCoordinator
+import kotlinx.coroutines.CancellationException
 
-class SyncWorker(
-    context: Context,
-    params: WorkerParameters,
-) : CoroutineWorker(context, params) {
-
-    private val syncManager = getKoin().get<SyncManager>()
-
-    override suspend fun doWork(): Result {
-        return try {
-            syncManager.startSync()
+class SyncWorker(context: Context, params: WorkerParameters, private val sync: SyncCoordinator) :
+    CoroutineWorker(context, params) {
+    override suspend fun doWork(): Result =
+        try {
+            sync.sync()
             Result.success()
-        } catch (e: Exception) {
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
             Result.retry()
         }
-    }
 }

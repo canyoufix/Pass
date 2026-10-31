@@ -9,7 +9,7 @@ object AutofillAuthBridge {
         AutofillAuthBridge.creator = creator
     }
 
-    internal fun createAuthIntent(): IntentSender? {
+    fun createAuthIntent(): IntentSender? {
         return creator?.createAuthIntent()
     }
 }

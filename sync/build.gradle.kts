@@ -18,7 +18,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -29,14 +29,13 @@ android {
 }
 
 dependencies {
+    implementation(libs.kotlinx.coroutines.core)
     // Retrofit
     api(libs.retrofit)
-    api(libs.converter.gson)
-    api(libs.logging.interceptor)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
 
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
     implementation(project(":settings"))
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

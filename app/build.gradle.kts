@@ -28,7 +28,7 @@ android {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
+                "proguard-rules.pro",
             )
         }
     }
@@ -42,6 +42,8 @@ android {
 }
 
 dependencies {
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(project(":domain"))
     implementation(project(":ui"))
     implementation(project(":data"))
     implementation(project(":crypto"))
@@ -74,6 +76,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(project(":settings"))
     implementation(libs.androidx.work.runtime.ktx)
+    testImplementation(libs.koin.test)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

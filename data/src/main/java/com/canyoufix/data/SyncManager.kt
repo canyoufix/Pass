@@ -1,171 +1,195 @@
 package com.canyoufix.data
 
-import android.util.Log
-import com.canyoufix.data.entity.CardEntity
-import com.canyoufix.data.entity.NoteEntity
-import com.canyoufix.data.entity.PasswordEntity
-import com.canyoufix.data.entity.QueueSyncEntity
-import com.canyoufix.data.repository.CardRepository
-import com.canyoufix.data.repository.NoteRepository
-import com.canyoufix.data.repository.PasswordRepository
-import com.canyoufix.data.repository.QueueSyncRepository
+import androidx.room.withTransaction
+import com.canyoufix.data.database.AppDatabase
+import com.canyoufix.data.entity.*
+import com.canyoufix.data.mapping.DtoToEntity.toCardEntity
+import com.canyoufix.data.mapping.DtoToEntity.toNoteEntity
+import com.canyoufix.data.mapping.DtoToEntity.toPasswordEntity
+import com.canyoufix.data.serialization.storageJson
+import com.canyoufix.data.sync.SyncQueueProcessor
+import com.canyoufix.data.sync.acceptRemoteChange
+import com.canyoufix.data.sync.requireSuccess
+import com.canyoufix.data.sync.upsertRemote
+import com.canyoufix.domain.CoroutineDispatchers
+import com.canyoufix.domain.repository.SyncCoordinator
+import com.canyoufix.domain.repository.SyncSettings
 import com.canyoufix.settings.datastore.SyncSettingsStore
-import com.canyoufix.sync.dto.CardDto
-import com.canyoufix.sync.dto.NoteDto
-import com.canyoufix.sync.dto.PasswordDto
-import com.canyoufix.sync.retrofit.RetrofitClient
-import com.canyoufix.sync.retrofit.RetrofitClientProvider
+import com.canyoufix.sync.dto.*
+import com.canyoufix.sync.retrofit.*
+import java.time.Clock
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.json.Json
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.*
 
 class SyncManager(
-    private val passwordRepository: PasswordRepository,
-    private val cardRepository: CardRepository,
-    private val noteRepository: NoteRepository,
-    private val queueSyncRepository: QueueSyncRepository,
-    private val syncSettingsStore: SyncSettingsStore,
-    private val retrofitClientProvider: RetrofitClientProvider
-) {
+    private val database: AppDatabase,
+    private val settingsStore: SyncSettingsStore,
+    private val clients: RetrofitClientProvider,
+    private val queue: SyncQueueProcessor,
+    private val dispatchers: CoroutineDispatchers,
+    private val clock: Clock,
+) : SyncCoordinator {
+    private val mutex = Mutex()
 
-    suspend fun isServerAvailable(): Boolean {
-        if (!syncSettingsStore.isEnabled())
-            return false
-
-        return try {
-            val response = retrofitClientProvider.getClient().pingApi.ping()
-            Log.d("SyncManager", "Ping status code: ${response.code()}")
-            response.isSuccessful
-        } catch (e: Exception) {
-            Log.e("SyncManager", "Ping failed", e)
-            false
-        }
-    }
-
-    suspend fun startSync() {
-        if (!isServerAvailable()) {
-            Log.d("SyncManager", "Server is not available, skipping sync")
-            return
+    override suspend fun testConnection(settings: SyncSettings) =
+        withContext(dispatchers.io) {
+            settings.validateEndpoint()
+            RetrofitClient(settings.ip.trim(), settings.port).pingApi.ping().requireSuccess()
         }
 
-        val retrofit = retrofitClientProvider.getClient()
-
-        // Получаем время синхронизации ДО начала операций
-        val lastSyncTime = syncSettingsStore.getLastSyncTime()
-        Log.d("SyncManager", "Starting sync with lastSyncTime: $lastSyncTime")
-
-        var sendSuccess = false
-        var pullSuccess = false
-
-        // 1. Отправка локальных изменений
-        try {
-            val items = queueSyncRepository.getAll().first()
-            for (item in items) {
-                try {
-                    when (item.type) {
-                        "note" -> syncNote(item, retrofit)
-                        "card" -> syncCard(item, retrofit)
-                        "password" -> syncPassword(item, retrofit)
+    override suspend fun sync() = mutex.withLock {
+        withContext(dispatchers.io) {
+            val settings = settingsStore.syncSettingsFlow.first()
+            if (!settings.isEnabled) return@withContext
+            val startedAt = clock.millis()
+            val client = clients.getClient()
+            // The original server implements full snapshots, not /sync?since= endpoints.
+            val passwords =
+                client.passwordApi.getAllPasswords().associateBy { it.id }.toMutableMap()
+            val cards = client.cardApi.getAllCards().associateBy { it.id }.toMutableMap()
+            val notes = client.noteApi.getAllNotes().associateBy { it.id }.toMutableMap()
+            queue.flush(
+                database.queueSyncDao().getAll().first(),
+                { item ->
+                    require(item.action in setOf("insert", "update", "delete")) {
+                        "Неизвестное действие в очереди"
                     }
-                    queueSyncRepository.delete(item)
-                } catch (e: Exception) {
-                    Log.e("SyncManager", "Ошибка при отправке item: ${item.id}", e)
-                    // оставляем в очереди
+                    when (item.type) {
+                        "password" -> {
+                            val queued = storageJson.decodeFromString<PasswordEntity>(item.payload)
+                            val e = database.passwordDao().getStoredById(queued.id) ?: queued
+                            val dto =
+                                PasswordDto(
+                                    e.id,
+                                    e.title,
+                                    e.url,
+                                    e.username,
+                                    e.password,
+                                    e.lastModified,
+                                    e.isDeleted,
+                                )
+                            passwords[e.id] =
+                                upsertRemote(
+                                    dto,
+                                    passwords[e.id],
+                                    PasswordDto::lastModified,
+                                    client.passwordApi::uploadPassword,
+                                    { client.passwordApi.updatePassword(e.id, it) },
+                                    { client.passwordApi.getById(e.id) },
+                                )
+                        }
+                        "card" -> {
+                            val queued = storageJson.decodeFromString<CardEntity>(item.payload)
+                            val e = database.cardDao().getStoredById(queued.id) ?: queued
+                            val dto =
+                                CardDto(
+                                    e.id,
+                                    e.title,
+                                    e.number,
+                                    e.expiryDate,
+                                    e.cvc,
+                                    e.holderName,
+                                    e.lastModified,
+                                    e.isDeleted,
+                                )
+                            cards[e.id] =
+                                upsertRemote(
+                                    dto,
+                                    cards[e.id],
+                                    CardDto::lastModified,
+                                    client.cardApi::uploadCard,
+                                    { client.cardApi.updateCard(e.id, it) },
+                                    { client.cardApi.getById(e.id) },
+                                )
+                        }
+                        "note" -> {
+                            val queued = storageJson.decodeFromString<NoteEntity>(item.payload)
+                            val e = database.noteDao().getStoredById(queued.id) ?: queued
+                            val dto = NoteDto(e.id, e.title, e.content, e.lastModified, e.isDeleted)
+                            notes[e.id] =
+                                upsertRemote(
+                                    dto,
+                                    notes[e.id],
+                                    NoteDto::lastModified,
+                                    client.noteApi::uploadNote,
+                                    { client.noteApi.updateNote(e.id, it) },
+                                    { client.noteApi.getById(e.id) },
+                                )
+                        }
+                        else -> error("Неизвестный тип записи в очереди")
+                    }
+                },
+                { database.queueSyncDao().delete(it) },
+                identity = {
+                    it.type +
+                        ":" +
+                        Json.parseToJsonElement(it.payload)
+                            .jsonObject
+                            .getValue("id")
+                            .jsonPrimitive
+                            .content
+                },
+            )
+            database.withTransaction {
+                val current = settingsStore.syncSettingsFlow.first()
+                check(
+                    current.isEnabled && current.ip == settings.ip && current.port == settings.port,
+                ) {
+                    "Настройки синхронизации изменились"
+                }
+                val pending =
+                    database
+                        .queueSyncDao()
+                        .getAll()
+                        .first()
+                        .map {
+                            it.type to
+                                Json.parseToJsonElement(it.payload)
+                                    .jsonObject
+                                    .getValue("id")
+                                    .jsonPrimitive
+                                    .content
+                        }
+                        .toSet()
+                for (dto in passwords.values) {
+                    val local = database.passwordDao().getStoredById(dto.id)
+                    if (
+                        acceptRemoteChange(
+                            local?.lastModified,
+                            dto.lastModified,
+                            ("password" to dto.id) in pending,
+                        )
+                    )
+                        database.passwordDao().insert(dto.toPasswordEntity())
+                }
+                for (dto in cards.values) {
+                    val local = database.cardDao().getStoredById(dto.id)
+                    if (
+                        acceptRemoteChange(
+                            local?.lastModified,
+                            dto.lastModified,
+                            ("card" to dto.id) in pending,
+                        )
+                    )
+                        database.cardDao().insert(dto.toCardEntity())
+                }
+                for (dto in notes.values) {
+                    val local = database.noteDao().getStoredById(dto.id)
+                    if (
+                        acceptRemoteChange(
+                            local?.lastModified,
+                            dto.lastModified,
+                            ("note" to dto.id) in pending,
+                        )
+                    )
+                        database.noteDao().insert(dto.toNoteEntity())
                 }
             }
-            sendSuccess = true
-        } catch (e: Exception) {
-            Log.e("SyncManager", "Ошибка при отправке очереди", e)
-        }
-
-        // 2. Получение новых данных
-        try {
-            Log.d("SyncManager", "Pulling changes since: $lastSyncTime")
-
-            val newPasswords = retrofit.passwordApi.getPasswordsSince(lastSyncTime)
-            val newNotes = retrofit.noteApi.getNotesSince(lastSyncTime)
-            val newCards = retrofit.cardApi.getCardsSince(lastSyncTime)
-
-            for (dto in newPasswords) {
-                passwordRepository.insertFromServer(dto)
-            }
-            for (dto in newNotes) {
-                noteRepository.insertFromServer(dto)
-            }
-            for (dto in newCards) {
-                cardRepository.insertFromServer(dto)
-            }
-
-            pullSuccess = true
-        } catch (e: Exception) {
-            Log.e("SyncManager", "Ошибка при получении данных с сервера", e)
-        }
-
-        // 3. Сохраняем время только если всё успешно
-        val newSyncTime = System.currentTimeMillis()
-        if (sendSuccess && pullSuccess) {
-            syncSettingsStore.saveLastSyncTime(newSyncTime)
-            Log.d("SyncManager", "Синхронизация успешно завершена, новое время: $newSyncTime")
-        } else {
-            Log.d("SyncManager", "Синхронизация НЕ завершена, время не обновлено")
-        }
-    }
-
-
-
-
-    private suspend fun syncNote(item: QueueSyncEntity, retrofit: RetrofitClient) {
-        val note = Json.decodeFromString<NoteEntity>(item.payload)
-        val dto = NoteDto(
-            id = note.id,
-            title = note.title,
-            content = note.content,
-            lastModified = note.lastModified,
-            isDeleted = note.isDeleted
-        )
-
-        when (item.action) {
-            "insert" -> retrofit.noteApi.uploadNote(dto)
-            "update" -> retrofit.noteApi.updateNote(note.id, dto)
-            "delete" -> retrofit.noteApi.deleteNote(note.id, dto)
-        }
-    }
-
-    private suspend fun syncCard(item: QueueSyncEntity, retrofit: RetrofitClient) {
-        val card = Json.decodeFromString<CardEntity>(item.payload)
-        val dto = CardDto(
-            id = card.id,
-            title = card.title,
-            number = card.number,
-            expiryDate = card.expiryDate,
-            cvc = card.cvc,
-            holderName = card.holderName,
-            lastModified = card.lastModified,
-            isDeleted = card.isDeleted
-        )
-
-        when (item.action) {
-            "insert" -> retrofit.cardApi.uploadCard(dto)
-            "update" -> retrofit.cardApi.updateCard(card.id, dto)
-            "delete" -> retrofit.cardApi.deleteCard(card.id, dto)
-        }
-    }
-
-    private suspend fun syncPassword(item: QueueSyncEntity, retrofit: RetrofitClient) {
-        val password = Json.decodeFromString<PasswordEntity>(item.payload)
-        val dto = PasswordDto(
-            id = password.id,
-            title = password.title,
-            url = password.url,
-            username = password.username,
-            password = password.password,
-            lastModified = password.lastModified,
-            isDeleted = password.isDeleted
-        )
-
-        when (item.action) {
-            "insert" -> retrofit.passwordApi.uploadPassword(dto)
-            "update" -> retrofit.passwordApi.updatePassword(password.id, dto)
-            "delete" -> retrofit.passwordApi.deletePassword(password.id, dto)
+            // This is a diagnostic timestamp; full snapshots do not rely on a client-clock cursor.
+            settingsStore.saveLastSyncTime(startedAt, settings.ip, settings.port)
         }
     }
 }

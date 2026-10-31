@@ -14,7 +14,7 @@ JDK 25, Android SDK Platform 37 и доступ к Google Maven / Maven Central.
 
 ```powershell
 .\gradlew.bat :app:assembleDebug
-.\gradlew.bat testDebugUnitTest :app:lintDebug :app:assembleDebugAndroidTest
+.\gradlew.bat :domain:test testDebugUnitTest :app:lintDebug :app:assembleDebugAndroidTest
 ```
 
 APK: `app/build/outputs/apk/debug/app-debug.apk`.
@@ -40,3 +40,9 @@ Compose и Koin согласованы через BOM; Kotlin встроен в 
 формат базы и шифрования на этом этапе не меняется.
 `minSdk` приложения остаётся 28, `targetSdk` — 35: изменение поведения Android
 при повышении target SDK требует отдельной проверки.
+
+## Архитектура и разработка
+
+[ARCHITECTURE.md](ARCHITECTURE.md) описывает модули, совместимость, тесты и ограничения сервера.
+
+Проверка стиля: `.\gradlew.bat checkKotlinFormat`. Форматирование: `.\gradlew.bat formatKotlin`.

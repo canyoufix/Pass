@@ -1,21 +1,36 @@
 package com.canyoufix.crypto
 
+import java.util.concurrent.atomic.AtomicLong
 import javax.crypto.SecretKey
 
-object SessionAESKeyHolder {
-    private var _key: SecretKey? = null
+/** Process-memory only. Domain/presentation depend on SessionRepository instead. */
+object SessionAESKeyHolder : SessionKeyStore {
+    private val revision = AtomicLong(0)
+    override val generation: Long
+        get() = revision.get()
 
-    val isAuthenticated: Boolean
-        get() = _key != null
+    @Volatile private var activeKey: SecretKey? = null
+    @Volatile
+    override var isDecoy: Boolean = false
+        private set
 
-    val key: SecretKey
-        get() = _key ?: throw SecurityException("No active session key")
+    override val isAuthenticated: Boolean
+        get() = activeKey != null
 
-    fun setKey(secretKey: SecretKey) {
-        _key = secretKey
+    override val key: SecretKey
+        get() = activeKey ?: throw SecurityException("Хранилище заблокировано")
+
+    @Synchronized
+    override fun setKey(secretKey: SecretKey, decoy: Boolean) {
+        isDecoy = decoy
+        activeKey = secretKey
+        revision.incrementAndGet()
     }
 
-    fun clear() {
-        _key = null
+    @Synchronized
+    override fun clear() {
+        revision.incrementAndGet()
+        activeKey = null
+        isDecoy = false
     }
 }

@@ -11,6 +11,7 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -26,10 +27,19 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Pass"
+
 include(":app")
+
 include(":ui")
+
 include(":data")
+
 include(":crypto")
+
 include(":autofill")
+
 include(":sync")
+
 include(":settings")
+
+include(":domain")

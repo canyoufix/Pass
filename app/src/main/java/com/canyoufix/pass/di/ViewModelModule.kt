@@ -1,12 +1,19 @@
 package com.canyoufix.pass.di
 
-import com.canyoufix.data.viewmodel.CardViewModel
-import com.canyoufix.data.viewmodel.NoteViewModel
-import com.canyoufix.data.viewmodel.PasswordViewModel
+import com.canyoufix.domain.usecase.*
+import com.canyoufix.ui.presentation.*
+import org.koin.core.module.dsl.*
 import org.koin.dsl.module
 
 val viewModelModule = module {
-    single { CardViewModel(get()) }
-    single { NoteViewModel(get()) }
-    single { PasswordViewModel(get()) }
+    factory { GeneratePassword() }
+    factoryOf(::ExportVault)
+    factoryOf(::ImportVault)
+    viewModelOf(::AuthViewModel)
+    viewModelOf(::VaultViewModel)
+    viewModelOf(::EntryEditorViewModel)
+    viewModelOf(::SettingsViewModel)
+    viewModelOf(::FilesViewModel)
+    viewModelOf(::TransferViewModel)
+    viewModelOf(::GeneratorViewModel)
 }
