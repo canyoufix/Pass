@@ -50,7 +50,7 @@ class MyAutofillService : AutofillService() {
         var passwordFieldId: AutofillId? = null
 
         while (nodes.isNotEmpty()) {
-            val node = nodes.poll()
+            val node = nodes.poll() ?: continue
             val autofillHints = node.autofillHints?.map { it.lowercase() }
 
             if (autofillHints?.any { it.contains("username") ||

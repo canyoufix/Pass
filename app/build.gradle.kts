@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
 
     // Compose compiler
     alias(libs.plugins.kotlin.compose)
@@ -8,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.canyoufix.pass"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.canyoufix.pass"
@@ -21,6 +20,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -32,9 +35,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
     }
     buildFeatures {
         compose = true
@@ -49,10 +49,10 @@ dependencies {
     implementation(project(":sync"))
 
     // Compose
-    implementation(libs.ui) // Для UI компонентов Compose
-    implementation(libs.material3) // Для Material 3
+    implementation(libs.androidx.ui) // Для UI компонентов Compose
+    implementation(libs.androidx.material3) // Для Material 3
     implementation(libs.androidx.foundation) // Для Column, Spacer и других
-    implementation(libs.ui.tooling.preview) // Для Preview
+    implementation(libs.androidx.ui.tooling.preview) // Для Preview
     implementation(libs.androidx.navigation.compose) // Для навигации
 
     // Room
@@ -71,15 +71,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
     implementation(project(":settings"))
     implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.androidx.espresso.core)
-    implementation(libs.androidx.espresso.core)
-    implementation(libs.androidx.espresso.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -87,4 +81,10 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    }
 }

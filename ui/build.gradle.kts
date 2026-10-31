@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
 
     // Compose compiler
     alias(libs.plugins.kotlin.compose)
@@ -8,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.canyoufix.ui"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 28
@@ -26,12 +25,13 @@ android {
             )
         }
     }
+    buildFeatures {
+        compose = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlinOptions {
-        jvmTarget = "11"
     }
 }
 
@@ -40,19 +40,19 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(project(":data"))
     implementation(project(":crypto"))
-    implementation(libs.androidx.espresso.core)
     implementation(project(":settings"))
     implementation(project(":sync"))
     androidTestImplementation(platform(libs.androidx.compose.bom))
 
-    implementation(libs.ui) // Для UI компонентов Compose
-    implementation(libs.material3) // Для Material 3
+    implementation(libs.androidx.ui) // Для UI компонентов Compose
+    implementation(libs.androidx.material3) // Для Material 3
     implementation(libs.androidx.foundation) // Для Column, Spacer и других
-    implementation(libs.ui.tooling.preview) // Для Preview
+    implementation(libs.androidx.ui.tooling.preview) // Для Preview
     implementation(libs.androidx.navigation.compose) // Для навигации
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation (libs.androidx.material.icons.extended)
 
+    implementation(platform(libs.koin.bom))
     // Koin
     implementation (libs.koin.androidx.compose)
 
@@ -65,4 +65,10 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    }
 }
