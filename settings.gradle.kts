@@ -29,17 +29,3 @@ dependencyResolutionManagement {
 rootProject.name = "Pass"
 
 include(":app")
-
-include(":ui")
-
-include(":data")
-
-include(":crypto")
-
-include(":autofill")
-
-include(":sync")
-
-include(":settings")
-
-include(":domain")

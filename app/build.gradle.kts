@@ -3,6 +3,8 @@ plugins {
 
     // Compose compiler
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -43,12 +45,6 @@ android {
 
 dependencies {
     implementation(libs.kotlinx.coroutines.core)
-    implementation(project(":domain"))
-    implementation(project(":ui"))
-    implementation(project(":data"))
-    implementation(project(":crypto"))
-    implementation(project(":autofill"))
-    implementation(project(":sync"))
 
     // Compose
     implementation(libs.androidx.ui) // Для UI компонентов Compose
@@ -60,11 +56,14 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.lifecycle.viewmodel.android)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
 
     // Koin
-    implementation(project.dependencies.platform(libs.koin.bom))
+    implementation(platform(libs.koin.bom))
     implementation(libs.koin.core)
     implementation(libs.koin.android)
+    implementation(libs.koin.androidx.compose)
 
     // DataStore
     implementation(libs.androidx.datastore.preferences)
@@ -74,9 +73,16 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui.graphics)
-    implementation(project(":settings"))
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    ksp(libs.androidx.room.compiler)
     testImplementation(libs.koin.test)
+    testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -85,6 +91,8 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
+
+ksp { arg("room.schemaLocation", "$projectDir/schemas") }
 
 kotlin {
     compilerOptions {

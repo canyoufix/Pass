@@ -1,7 +1,7 @@
 package com.canyoufix.pass.di
 
 import com.canyoufix.domain.usecase.*
-import com.canyoufix.ui.presentation.*
+import com.canyoufix.ui.viewmodel.*
 import org.koin.core.module.dsl.*
 import org.koin.dsl.module
 
