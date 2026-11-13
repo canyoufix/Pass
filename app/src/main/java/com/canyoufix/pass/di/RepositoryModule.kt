@@ -17,7 +17,12 @@ import org.koin.dsl.module
 
 val repositoryModule = module {
     singleOf(::SecurePrefsManager).bind<CredentialStore>()
-    single<CryptoEngine> { CryptoManager }
+    singleOf(::CryptoModeStore)
+    single<CryptoEngine> {
+        CryptoManager.configure(get())
+        CryptoManager
+    }
+    singleOf(::CryptoModeMigrator)
     single<SessionKeyStore> { SessionAESKeyHolder }
     singleOf(::VaultFileLock)
     singleOf(::MasterPasswordManager)
